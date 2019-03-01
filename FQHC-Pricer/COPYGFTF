@@ -1,0 +1,24 @@
+      *******************************************************
+      *              GFTF PAYMENT RATE COPYBOOK             *
+      *            FOR FQHC PPS PRICER (COPYGFTF)           *
+      *-----------------------------------------------------*
+      *                                                     *
+      *       VARIABLES: EFFECTIVE DATE (YYYYMMDD)          *
+      *                  GFTF PAYMENT RATE                  *
+      *                                                     *
+      *       SORTED BY EFFECTIVE DATE, ASCENDING ORDER     *
+      *                                                     *
+      *******************************************************
+       01  W-GFTF-FILLS.
+           03                          PIC X(30)   VALUE
+               '201601010032400201701010034900'.
+           03                          PIC X(15)   VALUE
+               '201801010038300'.
+       01  W-GFTF-TABLE REDEFINES W-GFTF-FILLS.
+           03  GFTF-ENTRY OCCURS 3 TIMES
+                   ASCENDING KEY IS GFTF-EFFDATE
+                   INDEXED BY GFTF-INDX.
+               05  GFTF-EFFDATE        PIC 9(8).
+               05  GFTF-PMT-RATE       PIC 9(5)V9(2).
+       01  GFTF-MAX                    PIC S9(7)   COMP-3
+                                       VALUE +3.

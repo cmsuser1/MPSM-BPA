@@ -1,0 +1,24 @@
+      *******************************************************
+      *              BASE PAYMENT RATE COPYBOOK             *
+      *            FOR FQHC PPS PRICER (COPYBASE)           *
+      *-----------------------------------------------------*
+      *                                                     *
+      *       VARIABLES: EFFECTIVE DATE (YYYYMMDD)          *
+      *                  BASE PAYMENT RATE                  *
+      *                                                     *
+      *       SORTED BY EFFECTIVE DATE, ASCENDING ORDER     *
+      *                                                     *
+      *******************************************************
+       01  W-BASE-FILLS.
+           03                          PIC X(30)   VALUE
+               '201410010015885201601010016060'.
+           03                          PIC X(30)   VALUE
+               '201701010016349201801010016660'.
+       01  W-BASE-TABLE REDEFINES W-BASE-FILLS.
+           03  BASE-ENTRY OCCURS 4 TIMES
+                   ASCENDING KEY IS BASE-EFFDATE
+                   INDEXED BY BASE-INDX.
+               05  BASE-EFFDATE        PIC 9(8).
+               05  BASE-PMT-RATE       PIC 9(5)V9(2).
+       01  BASE-MAX                    PIC S9(7)   COMP-3
+                                       VALUE +4.

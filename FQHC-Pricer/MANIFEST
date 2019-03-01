@@ -1,0 +1,51 @@
+************************************************************************
+*                                                                      *
+*                           MANIFEST LIST                              *
+*                                                                      *
+*                                                                      *
+* DATASET NAME:        MU00.@BF12390.FQHC.V20182.COBOL                 *
+* PRICER:              FEDERALLY QUALIFIED HEALTH CENTER (FQHC) PPS    *
+* VERSION:             2018.2                                          *
+* TO BE USED WITH:     2018.1                                          *
+* IMPLEMENTATION DATE: 04/01/2018                                      *
+* BETA/PRODUCTION:     PRODUCTION                                      *
+* RELEASE DATE:        03/09/2018                                      *
+*                                                                      *
+*                                                                      *
+* TOTAL NUMBER OF MEMBERS ASSOCIATED WITH THIS PRICER: 12              *
+*                                                                      *
+*     - NUMBER OF MEMBERS INCLUDED IN THIS DATASET: 4                  *
+*       - NEW MEMBERS: 0                                               *
+*         (LISTED BELOW UNDER "NON-PAIRED NEW FILE MEMBERS")           *
+*       - MEMBERS WITH CHANGES: 4                                      *
+*         (LISTED BELOW WITH "**" IN THE "CHNG" COLUMN)                *
+*                                                                      *
+*     - NUMBER OF MEMBERS NOT INCLUDED IN THIS DATASET: 8              *
+*       - MEMBERS WITH NO CHANGES: 8                                   *
+*         (LISTED BELOW WITH NOTHING IN THE "CHNG" COLUMN)             *
+*                                                                      *
+************************************************************************
+
+                       MEMBER SUMMARY LISTING (LINE COMPARE)
+
+ CHNG MEMBERS-COMPARED NEW-PROC OLD-PROC  MATCHED NEW-INS OLD-DEL REFM-LN N-DP-L
+
+      BASEADD                11       11       11
+      BASEBASE               14       14       14
+ **   BASEGAF               421      420      402      19      18
+      BASEGFTF               14       14       14
+      COPYADD                22       22       22
+      COPYBASE               24       24       24
+ **   COPYGAF               434      433      423      11      10
+      COPYGFTF               24       24       24
+      FQHCCAL              1772     1772     1772
+ **   MANIFEST               51       51       43       8       8
+ **   README                197      190      179      12       5       6
+      RTNCODES               97       97       97
+
+    12   TOTAL MEMBER(S) PROCESSED AS A PDS
+     4   TOTAL MEMBER(S) PROCESSED HAD CHANGES
+     8   TOTAL MEMBER(S) PROCESSED HAD NO CHANGES
+     0   TOTAL NEW FILE MEMBER(S) NOT PAIRED
+     0   TOTAL OLD FILE MEMBER(S) NOT PAIRED
+

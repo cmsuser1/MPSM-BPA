@@ -1,0 +1,140 @@
+      *********************************************
+      *   03/09/2018  RELEASE - V20182            *
+      *            Production                     *
+      *********************************************
+NOTE TO: Developers and maintainers 
+
+SUBJECT: Federally Qualified Health Center (FQHC) Prospective Payment
+         System (PPS) Pricer Release, Version 20181
+
+This FQHC Pricer release is designed for implementation in conjunction
+with the IOCE lines in the shared claims payment systems on or
+about 01Apr2018.
+
+The 12 files below comprise the FQHC Pricer:
+
+1  source program - FQHCCAL.
+
+4  copybooks  - COPYADD,COPYBASE,COPYGAF,COPYGFTF
+
+4  databooks  - BASEADD,BASEBASE,BASEGAF,BASEGFTF
+
+3  text files - copy of this Release Memorandum,
+                a list of the return codes (expanded by user notes),
+                a manifest listing files associated with this release
+              - README,RTNCODES,MANIFEST
+
+
+
+                                   Page 1 of 2
+Pricer Release Notes:
+
+Below are brief descriptions of the Pricer modules in
+the system plus a copy of the Linkage Section and
+the CALL statement needed to access the module.
+
+BASEADD  - human-readable data from which the COPYADD copybook is built
+BASEBASE - human-readable data from which the COPYBASE copybook is built
+BASEGAF  - human-readable data from which the COPYGAF copybook is built
+BASEGFTF - human-readable data from which the COPYGFTF copybook is built
+COPYADD  - copybook of add-on rates by effective date for FQHCCAL
+COPYBASE - copybook of base rates by effective date for FQHCCAL
+COPYGAF  - copybook of GAF rates by carrier-locality for FQHCCAL
+COPYGFTF - copybook of GFTF rates by effective date for FQHCCAL
+FQHCCAL  - source code for pricing subroutine
+MANIFEST - list of files associated with the release
+README   - copy of this memorandum
+RTNCODES - list of Pricer claim and line level return codes
+
+This is the LINKAGE SECTION defined in FQHCCAL.
+
+       LINKAGE SECTION. 
+
+      ***************************************************************
+      ***************************************************************
+      ***                                                         ***
+      **         LINKAGE SECTION INPUT AND OUTPUT VALUES          **
+      ***                                                         ***
+      ***************************************************************
+      ***************************************************************
+      *                                                             *
+      *   1) INPUT VALUES FROM CONTRACTOR                           *
+      *   2) OUTPUT VALUES TO CONTRACTOR                            *
+      *                                                             *
+      ***************************************************************
+
+      ***************************************************************
+      *  INPUT VALUES FOR THE PRICER                                *
+      *-------------------------------------------------------------*
+      * BELOW ARE THE VARIABLES THAT WILL BE PASSED TO PRICER       *
+      ***************************************************************
+       01  INPUT-RECORD.
+           05  I-CLAIM-LEVEL-INPUT.
+               10  I-PROVIDER-NUMBER          PIC X(06). // Provider Number
+               10  I-CARRIER-LOCALITY.
+                   15  I-CARRIER              PIC X(05). // Carrier
+                   15  I-LOCALITY             PIC X(02). // Locality
+               10  I-MA-PLAN-AMT              PIC 9(09)V99. // MA Plan amount
+               10  I-SRVC-FROM-DATE           PIC 9(08). // Service From Date
+               10  I-SRVC-THRU-DATE           PIC 9(08). // Service Through Date
+               10  I-SRVC-LINE-CNT            PIC 9(03). // Service line count
+           05  I-SERVICE-LINE OCCURS 450 TIMES
+                     DEPENDING ON I-SRVC-LINE-CNT.
+               10  I-LINE-LEVEL-INPUT.
+                   15  I-HCPCS                PIC X(05). // HCPCS
+                   15  I-MODIFIERS.
+                       20  I-MODIFIER-1       PIC X(02). // Modifer
+                       20  I-MODIFIER-2       PIC X(02).
+                       20  I-MODIFIER-3       PIC X(02).
+                       20  I-MODIFIER-4       PIC X(02).
+                       20  I-MODIFIER-5       PIC X(02).
+                   15  I-LINE-SRVC-DATE       PIC 9(08). // Service Date
+                   15  I-REVENUE-CODE         PIC X(04). // Revenue Code
+                   15  I-TOT-UNITS            PIC 9(09). // Total Units
+                   15  I-COV-UNITS            PIC 9(09). // Covered Units
+                   15  I-COV-CHARGES          PIC 9(09)V99. // Covered Charges
+               10  I-IOCE-LINE-FLAGS. // Intergrated outpatient code editor
+                   15  I-SRVC-IND             PIC X(02). 
+                   15  I-PYMT-IND             PIC X(02). // Payment Indicator
+                   15  I-DISCOUNT-FACT        PIC 9(01).
+                   15  I-LITEM-DENY-REJ-FLAG  PIC X(01).
+                   15  I-PKG-FLAG             PIC X(01). // Packaging Flag
+                   15  I-PYMT-ADJ-FLAG        PIC X(02).
+                   15  I-PYMT-METHOD-FLAG     PIC X(01). // Payment Method Flag
+                   15  I-LITEM-ACT-FLAG       PIC X(01). // Line Item Action flag
+                   15  I-COMP-ADJ-FLAG        PIC X(02). // Composite Adj. Flag
+
+
+
+      ***************************************************************
+      *  OUTPUT VALUES TO THE CONTRACTOR                            *
+      *-------------------------------------------------------------*
+      *   BELOW ARE THE VARIABLES THAT WILL BE PASSED BACK FROM THE *
+      *   PRICER                                                    *
+      ***************************************************************
+       01  OUTPUT-RECORD.
+           05  O-CLAIM-LEVEL-OUTPUT.
+               10  O-CALC-VERS                PIC X(07). // Pricer's software version
+               10  O-TOT-CLM-PYMT             PIC 9(09)V99. // Total Claim Payment
+               10  O-TOT-CLM-COIN             PIC 9(09)V99. // Total Claim Coinsurance
+               10  O-GEO-ADJ-FACT             PIC 9(01)V9(04). // GAF
+               10  O-CLM-RETURN-CODE          PIC 9(02). // Claim Return Code
+           05  O-LINE-LEVEL-OUTPUT OCCURS 450 TIMES
+                   DEPENDING ON I-SRVC-LINE-CNT.
+               10  O-LITEM-PYMT               PIC 9(09)V99. // Line Payment
+               10  O-LITEM-ADD-ON-PYMT        PIC 9(09)V99. // Line Add-on Payment
+               10  O-LITEM-COIN               PIC 9(09)V99. // Line Coinsurance
+               10  O-LITEM-RETURN-CODE        PIC 9(02). // Line Return Code
+
+
+
+   ***************************************************************
+   *    PROCESSING:                                              *
+   *        Below is the CALL STATEMENT and variables listed     *
+   *             required by the FQHCCAL module.                 *
+   ***************************************************************
+
+       PROCEDURE DIVISION  USING INPUT-RECORD
+                                 OUTPUT-RECORD.
+
+

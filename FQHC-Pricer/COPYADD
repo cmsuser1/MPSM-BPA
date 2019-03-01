@@ -1,0 +1,22 @@
+      *******************************************************
+      *            ADD-ON PAYMENT RATE COPYBOOK             *
+      *            FOR FQHC PPS PRICER (COPYADD)            *
+      *-----------------------------------------------------*
+      *                                                     *
+      *       VARIABLES: EFFECTIVE DATE (YYYYMMDD)          *
+      *                  ADD-ON PAYMENT RATE                *
+      *                                                     *
+      *       SORTED BY EFFECTIVE DATE, ASCENDING ORDER     *
+      *                                                     *
+      *******************************************************
+       01  W-ADD-FILLS.
+           03                          PIC X(14)   VALUE
+               '20141001013416'.
+       01  W-ADD-TABLE REDEFINES W-ADD-FILLS.
+           03  ADD-ENTRY OCCURS 1 TIMES
+                   ASCENDING KEY IS ADD-EFFDATE
+                   INDEXED BY ADD-INDX.
+               05  ADD-EFFDATE         PIC 9(8).
+               05  ADD-ON-PMT-RATE     PIC 9(2)V9(4).
+       01  ADD-MAX                     PIC S9(7)   COMP-3
+                                       VALUE +1.

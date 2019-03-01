@@ -1,0 +1,97 @@
+      ******************************************************************
+      *                                                                *
+      *                    FQHC PRICER RETURN CODES                    *
+      *                                                                *
+      ******************************************************************
+      *                                                                *
+      *----------------------------------------------------------------*
+      * CLAIM LEVEL RETURN CODES                                       *
+      * (O-CLM-RETURN-CODE, HC-CLM-RETURN-CODE)                        *
+      *----------------------------------------------------------------*
+      *                                                                *
+      *                                                                *
+      * 01 - CLAIM PROCESSED                                           *
+      *                                                                *
+      * 02 - CLAIM NOT PROCESSED - SERVICE FROM DATE NOT NUMERIC OR    *
+      *      LESS THAN THE FQHC PPS START DATE                         *
+      *                                                                *
+      *                                                                *
+      *----------------------------------------------------------------*
+      * LINE LEVEL RETURN CODES                                        *
+      * (O-LITEM-RETURN-CODE, HL-LITEM-RETURN-CODE)                    *
+      *----------------------------------------------------------------*
+      *                                                                *
+      *                                                                *
+      * LINE PROCESSED SUCCESSFULLY                                    *
+      * ---------------------------                                    *
+      *                                                                *
+      * 01 - LINE PROCESSED - PAYMENT BASED ON PPS RATE                *
+      *                                                                *
+      * 02 - LINE PROCESSED - PAYMENT BASED ON PROVIDER SUBMITTED      *
+      *      CHARGES                                                   *
+      *                                                                *
+      * 03 - LINE PROCESSED - PAYMENT BASED ON PPS RATE, PREVENTIVE    *
+      *      SERVICE(S) PRESENT                                        *
+      *                                                                *
+      * 04 - LINE PROCESSED - PAYMENT BASED ON PROVIDER SUBMITTED      *
+      *      CHARGES, PREVENTIVE SERVICE(S) PRESENT                    *
+      *                                                                *
+      * 05 - LINE PROCESSED - PAYMENT BASED ON PPS RATE WITH ADD-ON    *
+      *      PAYMENT                                                   *
+      *                                                                *
+      * 06 - LINE PROCESSED - SUPPLEMENTAL MA PAYMENT APPLIED          *
+      *                                                                *
+      * 07 - LINE PROCESSED - SUPPLEMENTAL MA PAYMENT NOT APPLIED      *
+      *                                                                *
+      * 08 - LINE PROCESSED - INFORMATIONAL ONLY                       *
+      *                                                                *
+      * 09 - LINE PROCESSED - PAYMENT NOT APPLIED; PAYMENT APPLIED TO  *
+      *      ANOTHER LINE                                              *
+      *                                                                *
+      *                                                                *
+      * LINE NOT PROCESSED BECAUSE OF IOCE FLAG VALUE                  *
+      * ---------------------------------------------                  *
+      *                                                                *
+      * 10 - LINE PROCESSING DISCONTINUED - PAYMENT METHOD FLAG        *
+      *      INVALID FOR FQHC PRICER                                   *
+      *                                                                *
+      * 11 - LINE PROCESSING DISCONTINUED - PAYMENT INDICATOR INVALID  *
+      *      FOR FQHC PRICER                                           *
+      *                                                                *
+      * 12 - LINE PROCESSING DISCONTINUED - COMPOSITE ADJUSTMENT FLAG  *
+      *      INVALID FOR THE FQHC PRICER                               *
+      *                                                                *
+      * 13 - LINE PROCESSING DISCONTINUED - PACKAGING FLAG INVALID FOR *
+      *      FQHC PRICER                                               *
+      *                                                                *
+      * 14 - LINE PROCESSING DISCONTINUED - LINE ITEM DENIAL OR        *
+      *      REJECTION FLAG INVALID FOR THE FQHC PRICER                *
+      *                                                                *
+      * 15 - LINE PROCESSING DISCONTINUED - LINE ITEM ACTION FLAG      *
+      *      INVALID FOR FQHC PRICER                                   *
+      *                                                                *
+      *                                                                *
+      * LINE NOT PROCESSED BECAUSE OF FISS VALUE                       *
+      * ----------------------------------------                       *
+      *                                                                *
+      * 17 - LINE PROCESSING DISCONTINUED - MA PLAN AMOUNT EQUAL TO    *
+      *      ZERO                                                      *
+      *                                                                *
+      *                                                                *
+      * LINE NOT PROCESSED BECAUSE OF PRICER VALUE                     *
+      * ------------------------------------------                     *
+      *                                                                *
+      * 18 - LINE PROCESSING DISCONTINUED - NO EFFECTIVE BASE RATE     *
+      *                                                                *
+      * 19 - LINE PROCESSING DISCONTINUED - NO EFFECTIVE GAF           *
+      *                                                                *
+      * 20 - LINE PROCESSING DISCONTINUED - NO EFFECTIVE ADD-ON RATE   *
+      *                                                                *
+      * 21 - LINE PROCESSED - PAYMENT BASED ON GRANDFATHERED TRIBAL    *
+      *      FQHC (GFTF) PAYMENT                                       *
+      *                                                                *
+      * 22 - LINE PROCESSED - PAYMENT BASED ON GRANDFATHERED TRIBAL    *
+      *      FQHC (GFTF) SUBMITTED CHARGES                             *
+      *                                                                *
+      *                                                                *
+      ******************************************************************

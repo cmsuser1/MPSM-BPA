@@ -1,0 +1,1772 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.        FQHCCAL.
+      *AUTHOR.            CMS.
+      *REMARKS.           CMS.
+
+      ******************************************************************
+      ******************************************************************
+      ***                                                            ***
+      **                                                              **
+      **          FEDERALLY QUALIFIED HEALTH CENTER (FQHC)            **
+      **             PROSPECTIVE PAYMENT SYSTEM PRICER                **
+      **        --------------------------------------------          **
+      **                                                              **
+      **   THIS PROGRAM IS DESIGNED TO PRICE FQHC CLAIMS ACCORDING    **
+      **   TO THE PAYMENT POLICY ESTABLISHED BY THE CENTERS FOR       **
+      **   MEDICARE AND MEDICAID SERVICES (CMS).                      **
+      **                                                              **
+      ***                                                            ***
+      ******************************************************************
+      ******************************************************************
+
+
+
+      ******************************************************************
+      *                                                                *
+      *                     FQHC PRICER CHANGE LOG                     *
+      *                                                                *
+      ******************************************************************
+      *                                                                *
+      * 05/02/2014 - CREATE BETA VERSION OF FQHC PRICER                *
+      * 2014.B       IMPLEMENTATION WILL BE OCTOBER 1, 2014            *
+      *                                                                *
+      * 07/31/2014 - CREATE FIRST PRODUCTION VERSION OF FQHC PRICER    *
+      * 2014.0       IMPLEMENTATION WILL BE OCTOBER 1, 2014            *
+      *            - UPDATE W-STORAGE-REF AND CAL-VERSION              *
+      *            - CHANGE REFERENCES TO "PER-DIEM" TO "ENCOUNTER"    *
+      *              TO MATCH TERMINOLOGY IN POLICY AND IOCE SPECS     *
+      *                                                                *
+      * 10/22/2015 - ADDED THE GRANDFATHERED TRIBAL FQHC (GFTF) PRICER *
+      * 2016.0       PAYMENT                                           *
+      *                                                                *
+      * 12/08/2015 - REVISED LOGIC TO FLAG GFTF CLAIMS FOR THE CLAIM   *
+      * 2016.1       LEVEL RATE ASSIGNMENTS (INSTEAD OF ASSIGNING      *
+      *              THESE BASED ON THE LINE PAYMENT INDICATOR VALUE)  *
+      *                                                                *
+      ******************************************************************
+
+
+
+      ******************************************************************
+      *                                                                *
+      *                    FQHC PRICER RETURN CODES                    *
+      *                                                                *
+      ******************************************************************
+      *                                                                *
+      *----------------------------------------------------------------*
+      * CLAIM LEVEL RETURN CODES                                       *
+      * (O-CLM-RETURN-CODE, HC-CLM-RETURN-CODE)                        *
+      *----------------------------------------------------------------*
+      *                                                                *
+      *                                                                *
+      * 01 - CLAIM PROCESSED                                           *
+      *                                                                *
+      * 02 - CLAIM NOT PROCESSED - SERVICE FROM DATE NOT NUMERIC OR    *
+      *      LESS THAN THE FQHC PPS START DATE                         *
+      *                                                                *
+      *                                                                *
+      *----------------------------------------------------------------*
+      * LINE LEVEL RETURN CODES                                        *
+      * (O-LITEM-RETURN-CODE, HL-LITEM-RETURN-CODE)                    *
+      *----------------------------------------------------------------*
+      *                                                                *
+      *                                                                *
+      * LINE PROCESSED SUCCESSFULLY                                    *
+      * ---------------------------                                    *
+      *                                                                *
+      * 01 - LINE PROCESSED - PAYMENT BASED ON PPS RATE                *
+      *                                                                *
+      * 02 - LINE PROCESSED - PAYMENT BASED ON PROVIDER SUBMITTED      *
+      *      CHARGES                                                   *
+      *                                                                *
+      * 03 - LINE PROCESSED - PAYMENT BASED ON PPS RATE, PREVENTIVE    *
+      *      SERVICE(S) PRESENT                                        *
+      *                                                                *
+      * 04 - LINE PROCESSED - PAYMENT BASED ON PROVIDER SUBMITTED      *
+      *      CHARGES, PREVENTIVE SERVICE(S) PRESENT                    *
+      *                                                                *
+      * 05 - LINE PROCESSED - PAYMENT BASED ON PPS RATE WITH ADD-ON    *
+      *      PAYMENT                                                   *
+      *                                                                *
+      * 06 - LINE PROCESSED - SUPPLEMENTAL MA PAYMENT APPLIED          *
+      *                                                                *
+      * 07 - LINE PROCESSED - SUPPLEMENTAL MA PAYMENT NOT APPLIED      *
+      *                                                                *
+      * 08 - LINE PROCESSED - INFORMATIONAL ONLY                       *
+      *                                                                *
+      * 09 - LINE PROCESSED - PAYMENT NOT APPLIED; PAYMENT APPLIED TO  *
+      *      ANOTHER LINE                                              *
+      *                                                                *
+      *                                                                *
+      * LINE NOT PROCESSED BECAUSE OF IOCE FLAG VALUE                  *
+      * ---------------------------------------------                  *
+      *                                                                *
+      * 10 - LINE PROCESSING DISCONTINUED - PAYMENT METHOD FLAG        *
+      *      INVALID FOR FQHC PRICER                                   *
+      *                                                                *
+      * 11 - LINE PROCESSING DISCONTINUED - PAYMENT INDICATOR INVALID  *
+      *      FOR FQHC PRICER                                           *
+      *                                                                *
+      * 12 - LINE PROCESSING DISCONTINUED - COMPOSITE ADJUSTMENT FLAG  *
+      *      INVALID FOR THE FQHC PRICER                               *
+      *                                                                *
+      * 13 - LINE PROCESSING DISCONTINUED - PACKAGING FLAG INVALID FOR *
+      *      FQHC PRICER                                               *
+      *                                                                *
+      * 14 - LINE PROCESSING DISCONTINUED - LINE ITEM DENIAL OR        *
+      *      REJECTION FLAG INVALID FOR THE FQHC PRICER                *
+      *                                                                *
+      * 15 - LINE PROCESSING DISCONTINUED - LINE ITEM ACTION FLAG      *
+      *      INVALID FOR FQHC PRICER                                   *
+      *                                                                *
+      *                                                                *
+      * LINE NOT PROCESSED BECAUSE OF FISS VALUE                       *
+      * ----------------------------------------                       *
+      *                                                                *
+      * 17 - LINE PROCESSING DISCONTINUED - MA PLAN AMOUNT EQUAL TO    *
+      *      ZERO                                                      *
+      *                                                                *
+      *                                                                *
+      * LINE NOT PROCESSED BECAUSE OF PRICER VALUE                     *
+      * ------------------------------------------                     *
+      *                                                                *
+      * 18 - LINE PROCESSING DISCONTINUED - NO EFFECTIVE BASE RATE     *
+      *                                                                *
+      * 19 - LINE PROCESSING DISCONTINUED - NO EFFECTIVE GAF           *
+      *                                                                *
+      * 20 - LINE PROCESSING DISCONTINUED - NO EFFECTIVE ADD-ON RATE   *
+      *                                                                *
+      * 21 - LINE PROCESSED - PAYMENT BASED ON GRANDFATHERED TRIBAL    *
+      *      FQHC (GFTF) PAYMENT                                       *
+      *                                                                *
+      * 22 - LINE PROCESSED - PAYMENT BASED ON GRANDFATHERED TRIBAL    *
+      *      FQHC (GFTF) SUBMITTED CHARGES                             *
+      *                                                                *
+      *                                                                *
+      ******************************************************************
+
+
+       DATE-COMPILED.
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SOURCE-COMPUTER.            IBM-370.
+       OBJECT-COMPUTER.            IBM-370.
+       INPUT-OUTPUT  SECTION.
+       FILE-CONTROL.
+
+       DATA DIVISION.
+       FILE SECTION.
+
+       WORKING-STORAGE SECTION.
+
+      ***************************************************************
+      *   FQHC PRICER VERSION NUMBER (YYYY.V - YEAR.VERSION)        *
+      *-------------------------------------------------------------*
+      *   UPDATE FOR EVERY NEW RELEASE                              *
+      ***************************************************************
+       01  W-STORAGE-REF                  PIC X(44)  VALUE
+           'FQHCV2016.1 - W O R K I N G   S T O R A G E'.
+
+
+      ***************************************************************
+      *   FQHC PRICER CALCULATION SECTION VERSION                   *
+      *-------------------------------------------------------------*
+      *   UPDATE EVERY RELEASE (YYYY.V)                             *
+      ***************************************************************
+       01  CAL-VERSION                    PIC X(07)  VALUE 'C2018.0'.
+
+
+
+      ***************************************************************
+      ***************************************************************
+      ***                                                         ***
+      **                       COPYBOOKS                           **
+      ***                                                         ***
+      ***************************************************************
+      ***************************************************************
+      *                                                             *
+      *   1) GEOGRAPHIC ADJUSTMENT FACTOR (GAF) HISTORY TABLE       *
+      *   2) FQHC BASE RATE HISTORY TABLE                           *
+      *   3) ADD-ON RATE HISTORY TABLE                              *
+      *   4) GRANDFATHERED TRIBAL FQHC (GFTF) RATE HISTORY TABLE    *
+      *                                                             *
+      ***************************************************************
+
+
+      ***************************************************************
+      *   GEOGRAPHIC ADJUSTMENT FACTOR (GAF) HISTORY TABLE          *
+      *-------------------------------------------------------------*
+      *   HISTORY TABLE IS UPDATED WHEN PHYSICIAN FEE SCHEDULE      *
+      *   GPCI VALUES CHANGE; USUALLY IN JANUARY.                   *
+      *   (FIRST RATE EFFECTIVE 10/01/2014)                         *
+      *   TABLE NAME REMAINS THE SAME FOR ALL RELEASES.             *
+      *   SORTED BY CARRIER-LOCALITY AND EFFECTIVE DATE.            *
+      ***************************************************************
+      ****** GAF-INDX   ******************************
+       COPY COPYGAF.
+
+
+      ***************************************************************
+      *   FQHC BASE RATE HISTORY TABLE                              *
+      *-------------------------------------------------------------*
+      *   HISTORY TABLE IS UPDATED WHEN BASE RATE CHANGES;          *
+      *   USUALLY IN JANUARY.                                       *
+      *   (FIRST RATE EFFECTIVE 10/01/2014)                         *
+      *   TABLE NAME REMAINS THE SAME FOR ALL RELEASES.             *
+      *   SORTED BY EFFECTIVE DATE.                                 *
+      ***************************************************************
+      ****** BASE-INDX   ******************************
+       COPY COPYBASE.
+
+
+      ***************************************************************
+      *   ADD-ON RATE HISTORY TABLE                                 *
+      *-------------------------------------------------------------*
+      *   HISTORY TABLE IS UPDATED WHEN ADD-ON RATE CHANGES.        *
+      *   (FIRST RATE EFFECTIVE 10/01/2014)                         *
+      *   TABLE NAME REMAINS THE SAME FOR ALL RELEASES.             *
+      *   SORTED BY EFFECTIVE DATE.                                 *
+      ***************************************************************
+      ****** ADD-INDX   ******************************
+       COPY COPYADD.
+
+
+      ***************************************************************
+      *   GRANDFATHERED TRIBAL FQHC (GFTF) RATE HISTORY TABLE       *
+      *-------------------------------------------------------------*
+      *   HISTORY TABLE IS UPDATED WHEN GFTF RATE CHANGES.          *
+      *   (FIRST RATE EFFECTIVE 01/01/2016)                         *
+      *   TABLE NAME REMAINS THE SAME FOR ALL RELEASES.             *
+      *   SORTED BY EFFECTIVE DATE.                                 *
+      ***************************************************************
+      ****** GFTF-INDX   *****************************
+       COPY COPYGFTF.
+
+
+
+
+      ***************************************************************
+      ***************************************************************
+      ***                                                         ***
+      **               WORKING-STORAGE DATA TABLES                 **
+      ***                                                         ***
+      ***************************************************************
+      ***************************************************************
+      *                                                             *
+      *   NONE AT THIS TIME                                         *
+      *                                                             *
+      ***************************************************************
+
+
+
+
+      ***************************************************************
+      ***************************************************************
+      ***                                                         ***
+      **               MISCELLANEOUS WORK VARIABLES                **
+      ***                                                         ***
+      ***************************************************************
+      ***************************************************************
+       01  WORK-AREA.
+           05  PROGRAM-CONSTANTS.
+               10  W-FQHC-PPS-START-DATE  PIC 9(08) VALUE 20141001.
+               10  W-GFTF-PPS-START-DATE  PIC 9(08) VALUE 20160101.
+               10  W-COIN-RATE            PIC 9V99  VALUE 0.20.
+           05  TABLE-INDEXES.
+               10  LN-SUB                 PIC S9(07) COMP-3  VALUE ZERO.
+               10  GAF-INDX2              PIC S9(07) COMP-3  VALUE ZERO.
+
+
+
+      ***************************************************************
+      ***************************************************************
+      ***                                                         ***
+      **    WORKING STORAGE "HOLD" VARIABLES FOR CALCULATIONS      **
+      ***                                                         ***
+      ***************************************************************
+      ***************************************************************
+       01  HOLD-VARIABLES.
+
+
+      ***************************************************************
+      ***                                                         ***
+      **   BELOW ARE THE VARIABLES THAT WILL BE HELD FOR CLAIM     **
+      **                       LEVEL PROCESSING                    **
+      ***                                                         ***
+      ***************************************************************
+           05  HOLD-CLAIM-LEVEL-ITEMS.
+
+      *-------------------------------------------------------------*
+      * HC-CLAIM-O IS THE HOLD AREA FOR O-CLAIM-LEVEL-OUTPUT        *
+      *-------------------------------------------------------------*
+               10  HC-CLAIM-O.
+                   15  HC-CALC-VERS          PIC X(07).
+                   15  HC-TOT-CLM-PYMT       PIC 9(09)V99.
+                   15  HC-TOT-CLM-COIN       PIC 9(09)V99.
+                   15  HC-GEO-ADJ-FACT       PIC 9(01)V9(04).
+                   15  HC-CLM-RETURN-CODE    PIC 9(02).
+
+               10  HC-TOT-CLM-REIM           PIC 9(09)V99.
+
+      *-------------------------------------------------------------*
+      * MISC. CLAIM LEVEL VARIABLES                                 *
+      *-------------------------------------------------------------*
+               10  HC-MA-CLAIM-FLAG          PIC X.
+                   88  MA-CLAIM                VALUE 'Y'.
+               10  HC-GFTF-CLAIM-FLAG        PIC X.
+                   88  GFTF-CLAIM              VALUE 'Y'.
+
+
+
+      ***************************************************************
+      ***************************************************************
+      ***                                                         ***
+      **   BELOW ARE THE VARIABLES THAT WILL BE HELD FOR LINE      **
+      **                      LEVEL PROCESSING                     **
+      ***                                                         ***
+      ***************************************************************
+      ***************************************************************
+           05  HOLD-LINE-LEVEL-ITEMS.
+
+      *-------------------------------------------------------------*
+      * HL-LINE-O IS THE HOLD AREA FOR O-LINE-LEVEL-OUTPUT          *
+      *-------------------------------------------------------------*
+               10  HL-LINE-O.
+                   15  HL-LITEM-PYMT         PIC 9(09)V99.
+                   15  HL-LITEM-ADD-ON-PYMT  PIC 9(09)V99.
+                   15  HL-LITEM-COIN         PIC 9(09)V99.
+                   15  HL-LITEM-RETURN-CODE  PIC 9(02).
+
+      *-------------------------------------------------------------*
+      * VARIABLES THAT HOLD CALCULATED VALUES FOR EACH LINE         *
+      *-------------------------------------------------------------*
+               10  HL-LITEM-REIM             PIC 9(09)V99.
+               10  HL-PPS-RATE               PIC 9(09)V99.
+               10  HL-PPS-RATE-PRE-ADD-ON    PIC 9(09)V99.
+               10  HL-MEDICARE-APPROVED-AMT  PIC 9(09)V99.
+               10  HL-BASE-COIN-AMT          PIC 9(09)V99.
+
+      *-------------------------------------------------------------*
+      * HL-SERVICE-LINE IS THE HOLD AREA FOR I-SERVICE-LINE         *
+      *-------------------------------------------------------------*
+               10  HL-SERVICE-LINE.
+                   15  HL-LINE-LEVEL-INPUT.
+                       20  HL-HCPCS               PIC X(05).
+                           88  MEDICAL-VISIT        VALUE 'G0466',
+                                                          'G0467',
+                                                          'G0468'.
+                           88  MENTAL-VISIT         VALUE 'G0469',
+                                                          'G0470'.
+                           88  MEDICAL-NEW          VALUE 'G0466'.
+                           88  MEDICAL-ESTAB        VALUE 'G0467'.
+                           88  MEDICAL-IPPE-AWV     VALUE 'G0468'.
+                           88  MENTAL-HEALTH-NEW    VALUE 'G0469'.
+                           88  MENTAL-HEALTH-ESTAB  VALUE 'G0470'.
+                       20  HL-MODIFIERS.
+                           25  HL-MODIFIER-1      PIC X(02).
+                           25  HL-MODIFIER-2      PIC X(02).
+                           25  HL-MODIFIER-3      PIC X(02).
+                           25  HL-MODIFIER-4      PIC X(02).
+                           25  HL-MODIFIER-5      PIC X(02).
+                       20  HL-LINE-SRVC-DATE      PIC 9(08).
+                       20  HL-REVENUE-CODE        PIC X(04).
+                           88 MA-CLAIM-REV       VALUE '0519'.
+                       20  HL-TOT-UNITS           PIC 9(09).
+                       20  HL-COV-UNITS           PIC 9(09).
+                       20  HL-COV-CHARGES         PIC 9(09)V99.
+                   15  HL-IOCE-LINE-FLAGS.
+                       20  HL-SRVC-IND            PIC X(02).
+                       20  HL-PYMT-IND            PIC X(02).
+                           88  TELEHEALTH        VALUE ' 2'.
+                           88  PAID-LINE         VALUE '10', '13', '14'.
+                           88  PAID-ENCOUNTER    VALUE '10'.
+                           88  NOT-PAID          VALUE '11'.
+                           88  NO-ADDTNL-PYMT    VALUE '12'.
+                           88  PAID-WITH-ADD-ON  VALUE '13'.
+                           88  PAID-GFTF         VALUE '14'.
+                       20  HL-DISCOUNT-FACT       PIC 9(01).
+                       20  HL-LITEM-DENY-REJ-FLAG PIC X(01).
+                           88  NOT-DENY-REJECT   VALUE '0'.
+                       20  HL-PKG-FLAG            PIC X(01).
+                           88  NOT-PKG           VALUE '0'.
+                           88  PKG-ENCOUNTER     VALUE '5'.
+                           88  PKG-PREVENTIVE    VALUE '6'.
+                       20  HL-PYMT-ADJ-FLAG       PIC X(02).
+                       20  HL-PYMT-METHOD-FLAG    PIC X(01).
+                           88  FQHC-PPS-SERVICE  VALUE '5'.
+                       20  HL-LITEM-ACT-FLAG      PIC X(01).
+                           88  NON-COVERED       VALUE '5'.
+                       20  HL-COMP-ADJ-FLAG       PIC X(02).
+                           88  OTHER-LINE        VALUE '00'.
+                           88  MEDICAL-LINE      VALUE '01'.
+                           88  MENTAL-LINE       VALUE '02'.
+                           88  MOD59-LINE        VALUE '03'.
+
+      *-------------------------------------------------------------*
+      * HL-DAY-SUMMARY IS THE HOLD AREA FOR W-DAY-SUM-ENTRY         *
+      *-------------------------------------------------------------*
+               10  HL-DAY-SUMMARY.
+                   15  HL-DS-DATE                       PIC 9(08).
+                   15  HL-DS-BASE-PMT-RATE              PIC 9(05)V99.
+                   15  HL-DS-GAF                        PIC 9(02)V9(03).
+                   15  HL-DS-ADD-ON-PMT-RATE            PIC 9(02)V9(04).
+                   15  HL-DS-TOT-MEDICAL-CHRGS          PIC 9(09)V99.
+                   15  HL-DS-TOT-MENTAL-CHRGS           PIC 9(09)V99.
+                   15  HL-DS-TOT-MOD59-CHRGS            PIC 9(09)V99.
+                   15  HL-DS-TOT-PREVENTIVE-CHRGS       PIC 9(09)V99.
+                   15  HL-DS-MEDICAL-PAID-LINE-FLAG     PIC X.
+                       88  MEDICAL-PAID-LINE-PRESENT        VALUE 'Y'.
+                   15  HL-DS-MENTAL-PAID-LINE-FLAG      PIC X.
+                       88  MENTAL-PAID-LINE-PRESENT         VALUE 'Y'.
+                   15  HL-DS-MOD59-PAID-LINE-FLAG       PIC X.
+                       88  MOD59-PAID-LINE-PRESENT          VALUE 'Y'.
+                   15  HL-DS-OTHER-PKG-LINE-FLAG        PIC X.
+                       88  OTHER-PKG-LINE-PRESENT           VALUE 'Y'.
+                   15  HL-DS-PREVENTIVE-LINE-FLAG       PIC X.
+                       88  PREVENTIVE-LINE-PRESENT          VALUE 'Y'.
+
+
+
+      ***************************************************************
+      ***************************************************************
+      ***                                                         ***
+      **     WORKING-STORAGE TABLES TO BE POPULATED IN PROGRAM     **
+      ***                                                         ***
+      ***************************************************************
+      ***************************************************************
+      *                                                             *
+      *   1) DAY SUMMARY TABLE                                      *
+      *                                                             *
+      ***************************************************************
+
+
+      ***************************************************************
+      *   BELOW IS THE LAY-UP TABLE FOR THE DAILY SUMMARY OF        *
+      *   SERVICES, CHARGES, AND RATES ON THE CLAIM.                *
+      *                                                             *
+      *   THIS TABLE HOLDS A RECORD FOR EACH DATE OF SERVICE ON THE *
+      *   CLAIM.  THE INFORMATION IS USED TO CALCULATE PAYMENT FOR  *
+      *   THE PAID LINE(S) WITH A CORRESPONDING SERVICE DATE.       *
+      *                                                             *
+      ***************************************************************
+      ****** W-DS-INDX *******************************
+
+       01  W-DAY-SUM-MAX                   PIC S9(07)  COMP-3 VALUE +0.
+       01  W-DAY-SUM-TBL.
+           05  W-DAY-SUM-ENTRY OCCURS 0 TO 450 TIMES
+                 DEPENDING ON W-DAY-SUM-MAX
+                 INDEXED BY W-DS-INDX.
+               10 W-DS-DATE                         PIC 9(08).
+               10 W-DS-BASE-PMT-RATE                PIC 9(05)V99.
+               10 W-DS-GAF                          PIC 9(02)V9(03).
+               10 W-DS-ADD-ON-PMT-RATE              PIC 9(02)V9(04).
+               10 W-DS-TOT-MEDICAL-CHRGS            PIC 9(09)V99.
+               10 W-DS-TOT-MENTAL-CHRGS             PIC 9(09)V99.
+               10 W-DS-TOT-MOD59-CHRGS              PIC 9(09)V99.
+               10 W-DS-TOT-PREVENTIVE-CHRGS         PIC 9(09)V99.
+               10 W-DS-MEDICAL-PAID-LINE-FLAG       PIC X.
+               10 W-DS-MENTAL-PAID-LINE-FLAG        PIC X.
+               10 W-DS-MOD59-PAID-LINE-FLAG         PIC X.
+               10 W-DS-OTHER-PKG-LINE-FLAG          PIC X.
+               10 W-DS-PREVENTIVE-LINE-FLAG         PIC X.
+
+
+
+
+       LINKAGE SECTION.
+
+
+      ***************************************************************
+      ***************************************************************
+      ***                                                         ***
+      **         LINKAGE SECTION INPUT AND OUTPUT RECORDS          **
+      ***                                                         ***
+      ***************************************************************
+      ***************************************************************
+      *                                                             *
+      *   1) INPUT RECORD FROM CONTRACTOR                           *
+      *   2) OUTPUT RECORD TO CONTRACTOR                            *
+      *                                                             *
+      ***************************************************************
+
+
+      ***************************************************************
+      *  INPUT RECORD FROM THE CONTRACTOR                           *
+      *-------------------------------------------------------------*
+      * BELOW ARE THE VARIABLES THAT WILL BE PASSED TO PRICER FROM  *
+      * THE CONTRACTOR (INCLUDES ITEMS FROM THE CLAIM AND IOCE;     *
+      * CLAIM LEVEL AND LINE LEVEL VARIABLES)                       *
+      ***************************************************************
+       01  INPUT-RECORD.
+           05  I-CLAIM-LEVEL-INPUT.
+               10  I-PROVIDER-NUMBER          PIC X(06).
+               10  I-CARRIER-LOCALITY.
+                   15  I-CARRIER              PIC X(05).
+                   15  I-LOCALITY             PIC X(02).
+               10  I-MA-PLAN-AMT              PIC 9(09)V99.
+               10  I-SRVC-FROM-DATE           PIC 9(08).
+               10  I-SRVC-THRU-DATE           PIC 9(08).
+               10  I-SRVC-LINE-CNT            PIC 9(03).
+           05  I-SERVICE-LINE OCCURS 450 TIMES
+                     DEPENDING ON I-SRVC-LINE-CNT.
+               10  I-LINE-LEVEL-INPUT.
+                   15  I-HCPCS                PIC X(05).
+                   15  I-MODIFIERS.
+                       20  I-MODIFIER-1       PIC X(02).
+                       20  I-MODIFIER-2       PIC X(02).
+                       20  I-MODIFIER-3       PIC X(02).
+                       20  I-MODIFIER-4       PIC X(02).
+                       20  I-MODIFIER-5       PIC X(02).
+                   15  I-LINE-SRVC-DATE       PIC 9(08).
+                   15  I-REVENUE-CODE         PIC X(04).
+                   15  I-TOT-UNITS            PIC 9(09).
+                   15  I-COV-UNITS            PIC 9(09).
+                   15  I-COV-CHARGES          PIC 9(09)V99.
+               10  I-IOCE-LINE-FLAGS.
+                   15  I-SRVC-IND             PIC X(02).
+                   15  I-PYMT-IND             PIC X(02).
+                   15  I-DISCOUNT-FACT        PIC 9(01).
+                   15  I-LITEM-DENY-REJ-FLAG  PIC X(01).
+                   15  I-PKG-FLAG             PIC X(01).
+                   15  I-PYMT-ADJ-FLAG        PIC X(02).
+                   15  I-PYMT-METHOD-FLAG     PIC X(01).
+                   15  I-LITEM-ACT-FLAG       PIC X(01).
+                   15  I-COMP-ADJ-FLAG        PIC X(02).
+
+
+
+      ***************************************************************
+      *  OUTPUT RECORD TO THE CONTRACTOR                            *
+      *-------------------------------------------------------------*
+      *   BELOW ARE THE VARIABLES THAT WILL BE PASSED BACK TO THE   *
+      *   CONTRACTOR ASSOCIATED WITH THE BILL BEING PROCESSED       *
+      ***************************************************************
+       01  OUTPUT-RECORD.
+           05  O-CLAIM-LEVEL-OUTPUT.
+               10  O-CALC-VERS                PIC X(07).
+               10  O-TOT-CLM-PYMT             PIC 9(09)V99.
+               10  O-TOT-CLM-COIN             PIC 9(09)V99.
+               10  O-GEO-ADJ-FACT             PIC 9(01)V9(04).
+               10  O-CLM-RETURN-CODE          PIC 9(02).
+           05  O-LINE-LEVEL-OUTPUT OCCURS 450 TIMES
+                   DEPENDING ON I-SRVC-LINE-CNT.
+               10  O-LITEM-PYMT               PIC 9(09)V99.
+               10  O-LITEM-ADD-ON-PYMT        PIC 9(09)V99.
+               10  O-LITEM-COIN               PIC 9(09)V99.
+               10  O-LITEM-RETURN-CODE        PIC 9(02).
+
+
+
+
+      ******************************************************************
+      ******************************************************************
+      ***                                                            ***
+      **                                                              **
+      **          FEDERALLY QUALIFIED HEALTH CENTER (FQHC)            **
+      **             PROSPECTIVE PAYMENT SYSTEM PRICER                **
+      **        --------------------------------------------          **
+      **                 PROCEDURE DIVISION START                     **
+      **                                                              **
+      ***                                                            ***
+      ******************************************************************
+      ******************************************************************
+
+       PROCEDURE DIVISION  USING INPUT-RECORD
+                                 OUTPUT-RECORD.
+
+
+
+      ******************************************************************
+      *                                                                *
+      *    CHECK CLAIM SERVICE FROM DATE AND DETERMINE WHETHER         *
+      *    TO PROCESS CLAIM OR NOT BASED ON THE DATE;                  *
+      *    RETURN TO CALLING PROGRAM                                   *
+      *                                                                *
+      ******************************************************************
+       0000-MAIN-CONTROL.
+
+
+      *----------------------------------------------------------------*
+      * INITIALIZE WORKING STORAGE HOLD AREAS AND OUTPUT RECORD        *
+      *----------------------------------------------------------------*
+             PERFORM 1000-INITIALIZE-ALL
+                THRU 1000-INITIALIZE-ALL-EXIT.
+
+
+      *----------------------------------------------------------------*
+      * CLAIM FROM DATE IS VALID; PROCESS THE CLAIM                    *
+      *----------------------------------------------------------------*
+              IF I-SRVC-FROM-DATE NUMERIC AND
+                 I-SRVC-FROM-DATE >= W-FQHC-PPS-START-DATE
+                 MOVE 01 TO O-CLM-RETURN-CODE
+                            HC-CLM-RETURN-CODE
+                 PERFORM 2000-PROCESS-CLAIM
+                    THRU 2000-PROCESS-CLAIM-EXIT
+
+
+      *----------------------------------------------------------------*
+      * CLAIM FROM DATE IS INVALID; DO NOT PROCESS THE CLAIM           *
+      *----------------------------------------------------------------*
+              ELSE
+                 MOVE 02 TO O-CLM-RETURN-CODE
+              END-IF.
+
+
+      *----------------------------------------------------------------*
+      * RETURN TO CALLING PROGRAM                                      *
+      *----------------------------------------------------------------*
+              GOBACK.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * INITIALIZE WORKING STORAGE HOLD AREAS AND OUTPUT RECORD TO     *
+      * BE PASSED BACK TO THE STANDARD SYSTEMS                         *
+      *                                                                *
+      ******************************************************************
+       1000-INITIALIZE-ALL.
+
+
+      *----------------------------------------------------------------*
+      * INITIALIZE VARIABLES FOR THE NEW CLAIM                         *
+      *----------------------------------------------------------------*
+             INITIALIZE HOLD-VARIABLES
+                        O-CLAIM-LEVEL-OUTPUT.
+
+
+      *----------------------------------------------------------------*
+      * INITIALIZE TABLES FOR THE NEW CLAIM                            *
+      *----------------------------------------------------------------*
+             PERFORM VARYING LN-SUB FROM 1 BY 1
+               UNTIL LN-SUB > 450
+                     INITIALIZE O-LINE-LEVEL-OUTPUT (LN-SUB)
+                     INITIALIZE W-DAY-SUM-ENTRY (LN-SUB)
+             END-PERFORM.
+
+
+      *----------------------------------------------------------------*
+      * MOVE CALCULATION (PRICER) VERSION TO OUTPUT & HOLD RECORDS     *
+      *----------------------------------------------------------------*
+             MOVE CAL-VERSION TO O-CALC-VERS
+                                 HC-CALC-VERS.
+
+       1000-INITIALIZE-ALL-EXIT.
+           EXIT.
+
+
+
+
+      ******************************************************************
+      *                                                                *
+      *                 FQHC CLAIM PROCESSING OVERVIEW                 *
+      *                 ------------------------------                 *
+      *                                                                *
+      *  1. VALIDATE EVERY LINE & COLLECT INFORMATION FOR EACH DAY     *
+      *  2. CALCULATE PAYMENT FOR PAID LINES & ACCUMULATE CLAIM TOTALS *
+      *  3. SEND CLAIM RESULTS TO OUTPUT                               *
+      *                                                                *
+      ******************************************************************
+
+
+       2000-PROCESS-CLAIM.
+
+
+      *----------------------------------------------------------------*
+      *                                                                *
+      *   STEP 1 - LOOP THROUGH ALL CLAIM LINES: VALIDATE LINES,       *
+      *   ------   GET RATES, AND POPULATE DAY SUMMARY TABLE           *
+      *                                                                *
+      *----------------------------------------------------------------*
+             PERFORM 3000-VALIDATE-LINE
+                THRU 3000-VALIDATE-LINE-EXIT
+                  VARYING LN-SUB FROM 1 BY 1
+                    UNTIL LN-SUB > I-SRVC-LINE-CNT.
+
+      *----------------------------------------------------------------*
+      *   ASSIGN LATEST EFFECTIVE GAF AS CLAIM GAF                     *
+      *----------------------------------------------------------------*
+             SET W-DS-INDX TO W-DAY-SUM-MAX.
+             MOVE W-DS-GAF (W-DS-INDX) TO HC-GEO-ADJ-FACT.
+
+
+      *----------------------------------------------------------------*
+      *                                                                *
+      *   STEP 2 - LOOP THROUGH ALL CLAIM LINES                        *
+      *   ------   (IF THE DAY SUMMARY TABLE HAS AT LEAST ONE RECORD)  *
+      *            - PAID LINES: CALCULATE PAYMENT, COINSURANCE;       *
+      *              ACCUMULATE CLAIM TOTALS, SET RETURN CODE, MOVE    *
+      *              LINE INFO. TO OUTPUT RECORD                       *
+      *            - NON-PAID LINES: SET APPROPRIATE RETURN CODE       *
+      *                                                                *
+      *----------------------------------------------------------------*
+             IF W-DAY-SUM-MAX > 0
+                PERFORM 4000-PROCESS-LINE
+                   THRU 4000-PROCESS-LINE-EXIT
+                     VARYING LN-SUB FROM 1 BY 1
+                       UNTIL LN-SUB > I-SRVC-LINE-CNT.
+
+
+      *---------------------------------------------------------------*
+      *                                                               *
+      *   STEP 3 - MOVE CLAIM LEVEL DATA TO OUTPUT RECORD             *
+      *   ------                                                      *
+      *                                                               *
+      *---------------------------------------------------------------*
+             PERFORM 5000-END-PRICE-RTN
+                THRU 5000-END-PRICE-RTN-EXIT.
+
+       2000-PROCESS-CLAIM-EXIT.
+           EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      *  VALIDATE CLAIM LINES:                                         *
+      *    - GRANDFATHERED TRIBAL FQHC CLAIM FROM DATE EDIT            *
+      *    - MEDICARE ADVANTAGE (MA) LINE EDIT                         *
+      *    - IOCE FLAG VALUES                                          *
+      *    * NOTE: RETURN CODES THAT INDICATE LINE NOT PROCESSED       *
+      *            ARE PASSED DIRECTLY TO THE OUTPUT RECORD            *
+      *            BECAUSE THE HOLD AREA WILL NOT BE USED              *
+      *                                                                *
+      *  GET RATES FOR THE LINE'S DATE OF SERVICE:                     *
+      *    - BASE RATE                                                 *
+      *    - GEOGRAPHIC ADJUSTMENT FACTOR (GAF)                        *
+      *    - ADD-ON RATE                                               *
+      *    - GRANDFATHERED TRIBAL FQHC (GFTF) RATE                     *
+      *                                                                *
+      *  UPDATE DAY SUMMARY TABLE USING LINE'S INFORMATION             *
+      *                                                                *
+      ******************************************************************
+       3000-VALIDATE-LINE.
+
+      *----------------------------------------------------------------*
+      *  MOVE SERVICE LINE INPUT RECORD TO WORKING STORAGE HOLD AREA   *
+      *  (TO PROCESS LINE USING CONDITIONS AND WITHOUT SUBSCRIPTS)     *
+      *----------------------------------------------------------------*
+             MOVE I-SERVICE-LINE (LN-SUB) TO HL-SERVICE-LINE.
+
+
+      *----------------------------------------------------------------*
+      *  DETERMINE IF CLAIM IS FROM A GRANDFATHERED TRIBAL FQHC (GFTF) *
+      *  - STOP PROCESSING IF FROM DATE IS BEFORE START OF GFTF PPS    *
+      *----------------------------------------------------------------*
+             IF PAID-GFTF
+                SET GFTF-CLAIM TO TRUE
+                IF I-SRVC-FROM-DATE < W-GFTF-PPS-START-DATE
+                   MOVE 02 TO O-CLM-RETURN-CODE
+                   INITIALIZE HL-SERVICE-LINE
+                   GOBACK
+                END-IF
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      *  CHECK MEDICARE ADVANTAGE (MA) STATUS AND VALIDATE             *
+      *----------------------------------------------------------------*
+             IF MA-CLAIM-REV
+                IF I-MA-PLAN-AMT > 0
+                   SET MA-CLAIM TO TRUE
+                ELSE
+                   MOVE 17 TO O-LITEM-RETURN-CODE (LN-SUB)
+                   INITIALIZE HL-SERVICE-LINE
+                   GO TO 3000-VALIDATE-LINE-EXIT
+                END-IF
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * CHECK LINE IOCE FLAG VALUES FOR VALIDITY                       *
+      *----------------------------------------------------------------*
+             PERFORM 3100-CHECK-IOCE-FLAGS
+                THRU 3100-CHECK-IOCE-FLAGS-EXIT.
+
+             IF O-LITEM-RETURN-CODE (LN-SUB) >= 10 OR
+                NOT-PAID OR
+                TELEHEALTH
+                INITIALIZE HL-SERVICE-LINE
+                GO TO 3000-VALIDATE-LINE-EXIT.
+
+
+      *----------------------------------------------------------------*
+      *  FOR GRANDFATHERED TRIBAL FQHCS (GFTF) ONLY:                   *
+      *  - GET GFTF RATE TO BE USED FOR THE LINE'S DATE OF SERVICE     *
+      *----------------------------------------------------------------*
+             IF GFTF-CLAIM
+                SET GFTF-INDX TO 1
+                PERFORM 3220-GET-GFTF-PMT-RATE
+                   THRU 3220-GET-GFTF-PMT-RATE-EXIT
+                   VARYING GFTF-INDX FROM 1 BY 1
+                   UNTIL (GFTF-INDX > GFTF-MAX) OR
+                         (GFTF-EFFDATE (GFTF-INDX) > HL-LINE-SRVC-DATE)
+
+
+      *----------------------------------------------------------------*
+      *  FOR ALL OTHER FQHCS (NON-GFTF):                               *
+      *  - GET BASE RATE TO BE USED FOR THE LINE'S DATE OF SERVICE     *
+      *----------------------------------------------------------------*
+             ELSE
+                SET BASE-INDX TO 1
+                PERFORM 3200-GET-BASE-PMT-RATE
+                   THRU 3200-GET-BASE-PMT-RATE-EXIT
+                   VARYING BASE-INDX FROM 1 BY 1
+                   UNTIL (BASE-INDX > BASE-MAX) OR
+                         (BASE-EFFDATE (BASE-INDX) > HL-LINE-SRVC-DATE)
+             END-IF.
+
+
+             IF HL-DS-BASE-PMT-RATE = 0
+                MOVE 18 TO O-LITEM-RETURN-CODE (LN-SUB)
+                INITIALIZE HL-SERVICE-LINE
+                GO TO 3000-VALIDATE-LINE-EXIT.
+
+
+
+      *----------------------------------------------------------------*
+      *  GET ADD-ON FACTOR TO BE USED FOR THE LINE'S DATE OF SERVICE   *
+      *----------------------------------------------------------------*
+             IF GFTF-CLAIM
+                MOVE 1 TO HL-DS-ADD-ON-PMT-RATE
+             ELSE
+                SET ADD-INDX TO 1
+                PERFORM 3300-GET-ADD-ON-PMT-RATE
+                   THRU 3300-GET-ADD-ON-PMT-RATE-EXIT
+                   VARYING ADD-INDX FROM 1 BY 1
+                   UNTIL (ADD-INDX > ADD-MAX) OR
+                         (ADD-EFFDATE (ADD-INDX) > HL-LINE-SRVC-DATE)
+             END-IF.
+
+             IF HL-DS-ADD-ON-PMT-RATE = 0
+                MOVE 20 TO O-LITEM-RETURN-CODE (LN-SUB)
+                INITIALIZE HL-SERVICE-LINE
+                GO TO 3000-VALIDATE-LINE-EXIT.
+
+
+      *----------------------------------------------------------------*
+      *  GET GEOGRAPHIC ADJUSTMENT FACTOR (GAF) TO BE USED FOR THE     *
+      *  LINE'S DATE OF SERVICE                                        *
+      *----------------------------------------------------------------*
+             IF GFTF-CLAIM
+                MOVE 1 TO HL-DS-GAF
+             ELSE
+                SET GAF-INDX TO 1
+                PERFORM 3400-GET-GAF
+                   THRU 3400-GET-GAF-EXIT
+             END-IF.
+
+             IF HL-DS-GAF = 0
+                MOVE 19 TO O-LITEM-RETURN-CODE (LN-SUB)
+                INITIALIZE HL-SERVICE-LINE
+                GO TO 3000-VALIDATE-LINE-EXIT.
+
+
+      *----------------------------------------------------------------*
+      *  UPDATE DAY SUMMARY TABLE USING THE LINE'S INFORMATION         *
+      *----------------------------------------------------------------*
+             PERFORM 3500-LOAD-DAY-SUMMARY-TBL
+                THRU 3500-LOAD-DAY-SUMMARY-TBL-EXIT.
+
+
+      *----------------------------------------------------------------*
+      *  INITIALIZE LINE RECORD IN WORKING STORAGE HOLD AREA           *
+      *  TO PREPARE FOR THE NEXT LINE                                  *
+      *----------------------------------------------------------------*
+             INITIALIZE HL-SERVICE-LINE.
+
+       3000-VALIDATE-LINE-EXIT.
+           EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      *  CHECK THE VALUES OF THE IOCE FLAGS ASSIGNED TO THE LINE       *
+      *  FOR VALIDITY FOR PROCESSING THE LINE THROUGH THE FQHC PRICER  *
+      *                                                                *
+      ******************************************************************
+       3100-CHECK-IOCE-FLAGS.
+
+      *----------------------------------------------------------------*
+      *   IDENTIFY INVALID LINE ITEM ACTION FLAG VALUES & SET LINE     *
+      *   RETURN CODE TO 15 IF INVALID.                                *
+      *----------------------------------------------------------------*
+      *   "NON-COVERED":  LITEM-ACT-FLAG (LN-SUB) = '5'                *
+      *----------------------------------------------------------------*
+             IF NON-COVERED
+                MOVE 15 TO O-LITEM-RETURN-CODE (LN-SUB)
+                GO TO 3100-CHECK-IOCE-FLAGS-EXIT.
+
+
+      *----------------------------------------------------------------*
+      *   IDENTIFY VALID LINE ITEM DENIAL OR REJECTION FLAG VALUES &   *
+      *   SET LINE RETURN CODE TO 14 IF INVALID.                       *
+      *----------------------------------------------------------------*
+      *   "NOT-DENY-REJECT": I-LITEM-DENY-REJ-FLAG (LN-SUB) = '0'      *
+      *----------------------------------------------------------------*
+             IF NOT NOT-DENY-REJECT
+                MOVE 14 TO O-LITEM-RETURN-CODE (LN-SUB)
+                GO TO 3100-CHECK-IOCE-FLAGS-EXIT.
+
+
+      *----------------------------------------------------------------*
+      *   IDENTIFY VALID PAYMENT INDICATORS & SET LINE RETURN CODE TO  *
+      *   11 IF INVALID.                                               *
+      *----------------------------------------------------------------*
+      *   "TELEHEALTH": I-PYMT-IND (LN-SUB) = ' 2'                     *
+      *   "PAID-ENCOUNTER": I-PYMT-IND (LN-SUB) = '10'                 *
+      *   "NOT-PAID": I-PYMT-IND (LN-SUB) = '11'                       *
+      *   "NO-ADDTNL-PYMT": I-PYMT-IND (LN-SUB) = '12'                 *
+      *   "PAID-WITH-ADD-ON": I-PYMT-IND (LN-SUB) = '13'               *
+      *   "PAID-GFTF":        I-PYMT-IND (LN-SUB) = '14'               *
+      *----------------------------------------------------------------*
+             IF NOT ( TELEHEALTH       OR
+                      PAID-ENCOUNTER   OR
+                      NOT-PAID         OR
+                      NO-ADDTNL-PYMT   OR
+                      PAID-WITH-ADD-ON OR
+                      PAID-GFTF )
+                MOVE 11 TO O-LITEM-RETURN-CODE (LN-SUB)
+                GO TO 3100-CHECK-IOCE-FLAGS-EXIT.
+
+
+      *----------------------------------------------------------------*
+      *   IDENTIFY VALID PACKAGING FLAG VALUES & SET LINE RETURN CODE  *
+      *   TO 13 IF INVALID.                                            *
+      *----------------------------------------------------------------*
+      *   "NOT-PKG": I-PKG-FLAG (LN-SUB) = '0'                         *
+      *   "PKG-ENCOUNTER": I-PKG-FLAG (LN-SUB) = '5'                   *
+      *   "PKG-PREVENTIVE": I-PKG-FLAG (LN-SUB) = '6'                  *
+      *----------------------------------------------------------------*
+             IF NOT ( NOT-PKG        OR
+                      PKG-ENCOUNTER  OR
+                      PKG-PREVENTIVE    )
+                MOVE 13 TO O-LITEM-RETURN-CODE (LN-SUB)
+                GO TO 3100-CHECK-IOCE-FLAGS-EXIT.
+
+
+      *----------------------------------------------------------------*
+      *   IDENTIFY VALID PAYMENT METHOD FLAG VALUE AND SET LINE RETURN *
+      *   CODE TO 10 IF INVALID.                                       *
+      *----------------------------------------------------------------*
+      *   "FQHC-PPS-SERVICE": I-PYMT-METHOD-FLAG (LN-SUB) = '5'        *
+      *----------------------------------------------------------------*
+             IF NOT FQHC-PPS-SERVICE
+                MOVE 10 TO O-LITEM-RETURN-CODE (LN-SUB)
+                GO TO 3100-CHECK-IOCE-FLAGS-EXIT.
+
+
+      *----------------------------------------------------------------*
+      *   IDENTIFY VALID COMPOSITE ADJUSTMENT FLAG VALUES & SET LINE   *
+      *   RETURN CODE TO 12 IF INVALID.                                *
+      *----------------------------------------------------------------*
+      *   "OTHER-LINE": I-COMP-ADJ-FLAG (LN-SUB) = '00'                *
+      *   "MEDICAL-LINE": I-COMP-ADJ-FLAG (LN-SUB) = '01'              *
+      *   "MENTAL-LINE": I-COMP-ADJ-FLAG (LN-SUB) = '02'               *
+      *   "MOD59-LINE": I-COMP-ADJ-FLAG (LN-SUB) = '03'                *
+      *----------------------------------------------------------------*
+             IF NOT ( OTHER-LINE   OR
+                      MEDICAL-LINE OR
+                      MENTAL-LINE  OR
+                      MOD59-LINE      )
+                MOVE 12 TO O-LITEM-RETURN-CODE (LN-SUB).
+
+       3100-CHECK-IOCE-FLAGS-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      *  GET THE BASE RATE FOR THE LINE'S DATE OF SERVICE,             *
+      *  STORE IN DAY SUMMARY HOLD RECORD                              *
+      *                                                                *
+      ******************************************************************
+       3200-GET-BASE-PMT-RATE.
+
+      *----------------------------------------------------------------*
+      * ACCEPT CURRENT ENTRY'S BASE RATE                               *
+      *----------------------------------------------------------------*
+             MOVE BASE-PMT-RATE (BASE-INDX) TO HL-DS-BASE-PMT-RATE.
+
+       3200-GET-BASE-PMT-RATE-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      *  GET THE GFTF FACTOR FOR THE LINE'S DATE OF SERVICE,           *
+      *  STORE IN DAY SUMMARY HOLD RECORD                              *
+      *                                                                *
+      ******************************************************************
+       3220-GET-GFTF-PMT-RATE.
+
+      *----------------------------------------------------------------*
+      * ACCEPT CURRENT ENTRY'S GFTF RATE                               *
+      *----------------------------------------------------------------*
+             MOVE GFTF-PMT-RATE (GFTF-INDX) TO HL-DS-BASE-PMT-RATE.
+
+       3220-GET-GFTF-PMT-RATE-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      *  GET THE ADD-ON FACTOR FOR THE LINE'S DATE OF SERVICE,         *
+      *  STORE IN DAY SUMMARY HOLD RECORD                              *
+      *                                                                *
+      ******************************************************************
+       3300-GET-ADD-ON-PMT-RATE.
+
+      *----------------------------------------------------------------*
+      * ACCEPT CURRENT ENTRY'S ADD-ON RATE                             *
+      *----------------------------------------------------------------*
+             MOVE ADD-ON-PMT-RATE (ADD-INDX) TO HL-DS-ADD-ON-PMT-RATE.
+
+       3300-GET-ADD-ON-PMT-RATE-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      *  GET THE GEOGRAPHIC ADJUSTMENT FACTOR (GAF) FOR THE LINE'S     *
+      *  DATE OF SERVICE, STORE IN DAY SUMMARY HOLD RECORD             *
+      *                                                                *
+      ******************************************************************
+       3400-GET-GAF.
+
+      *----------------------------------------------------------------*
+      * START GAF TABLE SEARCH AT FIRST RECORD                         *
+      *----------------------------------------------------------------*
+           SET GAF-INDX TO 1.
+           SEARCH GAF-ENTRY VARYING GAF-INDX
+
+      *----------------------------------------------------------------*
+      * NO RECORD WITH THE CLAIM'S CARRIER-LOCALITY IS FOUND           *
+      *----------------------------------------------------------------*
+              AT END
+                 GO TO 3400-GET-GAF-EXIT
+
+      *----------------------------------------------------------------*
+      * FIRST RECORD WITH THE CLAIM'S CARRIER-LOCALITY IS FOUND        *
+      *----------------------------------------------------------------*
+              WHEN GAF-CARRIER-LOC (GAF-INDX) = I-CARRIER-LOCALITY
+                 SET GAF-INDX2 TO GAF-INDX
+
+      *----------------------------------------------------------------*
+      * GET GAF MOST RECENTLY EFFECTIVE FOR THE CARR-LOC & SRVC DATE   *
+      *----------------------------------------------------------------*
+                     PERFORM 3410-GET-EFFECTIVE-GAF
+                        THRU 3410-GET-EFFECTIVE-GAF-EXIT
+                        VARYING GAF-INDX2 FROM GAF-INDX BY 1
+                        UNTIL GAF-CARRIER-LOC (GAF-INDX2) NOT =
+                              I-CARRIER-LOCALITY OR
+                              GAF-INDX2 > GAF-MAX.
+
+       3400-GET-GAF-EXIT.
+             EXIT.
+
+
+      ******************************************************************
+      *                                                                *
+      *  GET THE GEOGRAPHIC ADJUSTMENT FACTOR (GAF) FOR THE LINE'S     *
+      *  DATE OF SERVICE, STORE IN DAY SUMMARY HOLD RECORD             *
+      *                                                                *
+      ******************************************************************
+       3410-GET-EFFECTIVE-GAF.
+
+      *----------------------------------------------------------------*
+      * ACCEPT CURRENT ENTRY'S GAF IF EFFECTIVE FOR LINE               *
+      *----------------------------------------------------------------*
+             IF GAF-EFFDATE (GAF-INDX2) <= HL-LINE-SRVC-DATE
+                MOVE GAF-RATE (GAF-INDX2) TO HL-DS-GAF.
+
+       3410-GET-EFFECTIVE-GAF-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      *  COLLECT AND SUMMARIZE INFORMATION FOR EACH DATE OF            *
+      *  SERVICE ON THE CLAIM (STORE IN DAY SUMMARY TABLE)             *
+      *                                                                *
+      ******************************************************************
+      *                                                                *
+      *  ORDER RECORDS BY DATE - EARLIEST TO LATEST DATE               *
+      *                                                                *
+      *  EACH VALID SERVICE LINE'S DATA IS USED TO UPDATE THE RECORD   *
+      *  IN THE DAY SUMMARY TABLE THAT CORRESPONDS TO THE LINE'S DATE  *
+      *  OF SERVICE.                                                   *
+      *                                                                *
+      ******************************************************************
+       3500-LOAD-DAY-SUMMARY-TBL.
+
+      *----------------------------------------------------------------*
+      * ADD OR UPDATE DAY SUMMARY RECORD FOR LINE'S DATE OF SERVICE    *
+      *----------------------------------------------------------------*
+             PERFORM 3510-SEARCH-DAY-SUM-TBL
+                THRU 3510-SEARCH-DAY-SUM-TBL-EXIT.
+
+      *----------------------------------------------------------------*
+      * INITIALIZE DAY SUMMARY HOLD RECORD                             *
+      *----------------------------------------------------------------*
+             INITIALIZE HL-DAY-SUMMARY.
+
+       3500-LOAD-DAY-SUMMARY-TBL-EXIT.
+             EXIT.
+
+
+      ******************************************************************
+      *                                                                *
+      * DETERMINE WHETHER A NEW DAY SUMMARY TABLE RECORD SHOULD BE     *
+      * ADDED OR IF AN EXISTING RECORD MUST BE UPDATED                 *
+      *                                                                *
+      ******************************************************************
+       3510-SEARCH-DAY-SUM-TBL.
+
+      *----------------------------------------------------------------*
+      * SEARCH DAY SUMMARY TABLE STARTING AT ENTRY #1                  *
+      *----------------------------------------------------------------*
+             SET W-DS-INDX TO 1.
+             SEARCH W-DAY-SUM-ENTRY VARYING W-DS-INDX
+
+      *----------------------------------------------------------------*
+      * IF THE SERVICE LINE'S DATE IS NOT ALREADY IN THE TABLE,        *
+      * ADD A NEW RECORD FOR THAT DAY                                  *
+      *----------------------------------------------------------------*
+                AT END
+                   PERFORM 3520-ADD-ENTRY
+                      THRU 3520-ADD-ENTRY-EXIT
+
+      *----------------------------------------------------------------*
+      * IF THE SERVICE LINE'S DATE IS ALREADY IN THE TABLE,            *
+      * UPDATE THE EXISTING RECORD FOR THAT DAY                        *
+      *----------------------------------------------------------------*
+                WHEN W-DS-DATE (W-DS-INDX) = HL-LINE-SRVC-DATE
+                   PERFORM 3530-UPDATE-ENTRY
+                      THRU 3530-UPDATE-ENTRY-EXIT.
+
+       3510-SEARCH-DAY-SUM-TBL-EXIT.
+             EXIT.
+
+
+      ******************************************************************
+      *                                                                *
+      * INSERT THE NEW DAY SUMMARY TABLE RECORD IN THE CORRECT         *
+      * POSITION (EARLIEST TO LATEST DATE)                             *
+      *                                                                *
+      ******************************************************************
+       3520-ADD-ENTRY.
+
+      *----------------------------------------------------------------*
+      * INCREASE THE TOTAL NUMBER OF TABLE RECORDS FOR NEW ENTRY       *
+      *----------------------------------------------------------------*
+             ADD 1 TO W-DAY-SUM-MAX.
+
+      *----------------------------------------------------------------*
+      * MOVE TO THE NEW ENTRY POSITION (EMPTY RECORD)                  *
+      *----------------------------------------------------------------*
+             SET W-DS-INDX TO W-DAY-SUM-MAX.
+             INITIALIZE W-DAY-SUM-ENTRY (W-DS-INDX).
+
+      *----------------------------------------------------------------*
+      * DETERMINE WHERE THE NEW DAY SUMMARY TABLE ENTRY FOR THE        *
+      * CURRENT SERVICE LINE SHOULD BE ENTERED INTO THE TABLE          *
+      * ACCORDING TO ITS DATE - EARLIEST TO LATEST DATE                *
+      *----------------------------------------------------------------*
+             PERFORM 3540-STAGE-ENTRY
+                THRU 3540-STAGE-ENTRY-EXIT
+                  UNTIL W-DS-INDX = 1 OR
+                     HL-LINE-SRVC-DATE NOT <
+                       W-DS-DATE (W-DS-INDX - 1).
+
+      *----------------------------------------------------------------*
+      * SET THE DAY SUMMARY HOLD RECORD'S DATE TO THE LINE'S DATE      *
+      *----------------------------------------------------------------*
+             MOVE HL-LINE-SRVC-DATE TO HL-DS-DATE.
+
+      *----------------------------------------------------------------*
+      * SET DAY'S FLAGS AND ACCUMULATE CHARGES USING LINE INFO.        *
+      *----------------------------------------------------------------*
+             PERFORM 3550-UPDATE-FLAGS-CHARGES
+                THRU 3550-UPDATE-FLAGS-CHARGES-EXIT.
+
+       3520-ADD-ENTRY-EXIT.
+           EXIT.
+
+
+      ******************************************************************
+      *                                                                *
+      * UPDATE THE EXISTING DAY SUMMARY TABLE RECORD WITH THE SAME     *
+      * DATE AS THE CURRENT SERVICE LINE                               *
+      *                                                                *
+      ******************************************************************
+       3530-UPDATE-ENTRY.
+
+      *----------------------------------------------------------------*
+      * MOVE EXISTING DAY SUMMARY RECORD TO HOLD AREA                  *
+      *----------------------------------------------------------------*
+             MOVE W-DAY-SUM-ENTRY (W-DS-INDX) TO HL-DAY-SUMMARY.
+
+      *----------------------------------------------------------------*
+      * SET DAY'S FLAGS AND ACCUMULATE CHARGES USING LINE INFO.        *
+      *----------------------------------------------------------------*
+             PERFORM 3550-UPDATE-FLAGS-CHARGES
+                THRU 3550-UPDATE-FLAGS-CHARGES-EXIT.
+
+       3530-UPDATE-ENTRY-EXIT.
+           EXIT.
+
+
+      ******************************************************************
+      *                                                                *
+      * MOVE THE EXISTING DAY SUMMARY TABLE RECORD WITH A LATER DATE   *
+      * DOWN ONE RECORD POSITION AND SET THE EMPTY RECORD FOR          *
+      * THE NEW ENTRY'S INDEX TO THE NEXT HIGHER RECORD POSITION.      *
+      *                                                                *
+      ******************************************************************
+       3540-STAGE-ENTRY.
+
+             MOVE W-DAY-SUM-ENTRY (W-DS-INDX - 1) TO
+                  W-DAY-SUM-ENTRY (W-DS-INDX).
+             SET  W-DS-INDX DOWN BY 1.
+
+       3540-STAGE-ENTRY-EXIT.
+             EXIT.
+
+
+      ******************************************************************
+      *                                                                *
+      * FOR THE CURRENT DAY SUMMARY TABLE RECORD, UPDATE THE LINE TYPE *
+      * PRESENT FLAGS AND ACCUMULATE CHARGES BASED ON THE CURRENT      *
+      * SERVICE LINE'S TYPE.  MOVE THE DAY SUMMARY HOLD RECORD TO THE  *
+      * DAY SUMMARY TABLE.                                             *
+      *                                                                *
+      ******************************************************************
+       3550-UPDATE-FLAGS-CHARGES.
+
+      *----------------------------------------------------------------*
+      * MEDICAL VISIT LINE                                             *
+      *----------------------------------------------------------------*
+             IF MEDICAL-LINE
+                COMPUTE HL-DS-TOT-MEDICAL-CHRGS =
+                        HL-DS-TOT-MEDICAL-CHRGS +
+                        HL-COV-CHARGES
+                IF PAID-LINE
+                   SET MEDICAL-PAID-LINE-PRESENT TO TRUE.
+
+      *----------------------------------------------------------------*
+      * MENTAL VISIT LINE                                              *
+      *----------------------------------------------------------------*
+             IF MENTAL-LINE
+                COMPUTE HL-DS-TOT-MENTAL-CHRGS =
+                        HL-DS-TOT-MENTAL-CHRGS +
+                        HL-COV-CHARGES
+                IF PAID-LINE
+                   SET MENTAL-PAID-LINE-PRESENT TO TRUE.
+
+      *----------------------------------------------------------------*
+      * MEDICAL OR MENTAL VISIT LINE WITH MODIFIER '59'                *
+      *----------------------------------------------------------------*
+             IF MOD59-LINE
+                COMPUTE HL-DS-TOT-MOD59-CHRGS =
+                        HL-DS-TOT-MOD59-CHRGS +
+                        HL-COV-CHARGES
+                IF PAID-LINE
+                   SET MOD59-PAID-LINE-PRESENT TO TRUE.
+
+      *----------------------------------------------------------------*
+      * QUALIFYING VISIT OR ANCILLARY SERVICE LINE                     *
+      *----------------------------------------------------------------*
+             IF NO-ADDTNL-PYMT AND PKG-ENCOUNTER
+                SET OTHER-PKG-LINE-PRESENT TO TRUE.
+
+      *----------------------------------------------------------------*
+      * PREVENTIVE SERVICE LINE                                        *
+      *----------------------------------------------------------------*
+             IF NO-ADDTNL-PYMT AND PKG-PREVENTIVE
+                SET PREVENTIVE-LINE-PRESENT TO TRUE
+                COMPUTE HL-DS-TOT-PREVENTIVE-CHRGS =
+                        HL-DS-TOT-PREVENTIVE-CHRGS +
+                        HL-COV-CHARGES.
+
+      *----------------------------------------------------------------*
+      * MOVE DAY SUMMARY RECORD IN HOLD AREA TO DAY SUMMARY TABLE      *
+      *----------------------------------------------------------------*
+             MOVE HL-DAY-SUMMARY TO W-DAY-SUM-ENTRY (W-DS-INDX).
+
+       3550-UPDATE-FLAGS-CHARGES-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * PROCESS EACH SERVICE LINE BASED ON ITS TYPE                    *
+      * SOME LINES WILL BE PAID, AND SOME WILL NOT                     *
+      *                                                                *
+      ******************************************************************
+       4000-PROCESS-LINE.
+
+      *----------------------------------------------------------------*
+      * LINE RETURN CODE INDICATES LINE SHOULD NOT BE PROCESSED: STOP  *
+      *   (NON-COVERED/MA PLAN AMT ZERO/IOCE FLAG VALUE INVALID)       *
+      *----------------------------------------------------------------*
+             IF O-LITEM-RETURN-CODE (LN-SUB) >= 10
+                GO TO 4000-PROCESS-LINE-EXIT.
+
+      *----------------------------------------------------------------*
+      * MOVE SERVICE LINE INPUT RECORD TO WORKING STORAGE HOLD AREA    *
+      *   (TO PROCESS LINE USING CONDITIONS AND WITHOUT SUBSCRIPTS)    *
+      *----------------------------------------------------------------*
+             MOVE I-SERVICE-LINE (LN-SUB) TO HL-SERVICE-LINE.
+
+      *----------------------------------------------------------------*
+      * NON-PAID INFORMATIONAL LINE: SET LINE RETURN CODE              *
+      *   (FLU/PPV VACCINE ADMINISTRATION/TELEHEALTH)                  *
+      *----------------------------------------------------------------*
+             IF NOT-PAID OR TELEHEALTH
+                MOVE 08 TO HL-LITEM-RETURN-CODE.
+
+      *----------------------------------------------------------------*
+      * NON-PAID PACKAGED LINE: SET LINE RETURN CODE                   *
+      *   (QUALIFYING VISIT/PREVENTIVE SERVICE/ANCILLARY SERVICE/OTHER)*
+      *----------------------------------------------------------------*
+             IF NO-ADDTNL-PYMT AND (PKG-ENCOUNTER OR PKG-PREVENTIVE)
+                MOVE 09 TO HL-LITEM-RETURN-CODE.
+
+      *----------------------------------------------------------------*
+      * PAID LINE: FIND DAY SUMMARY RECORD, CALCULATE PAYMENT,         *
+      * CALCULATE COINSURANCE & REIMBURSEMENT, AND UPDATE CLAIM TOTALS *
+      *   (FQHC PER DIEM VISIT)                                        *
+      *----------------------------------------------------------------*
+             IF PAID-LINE
+                PERFORM 4100-GET-DAY-SUM-REC
+                   THRU 4100-GET-DAY-SUM-REC-EXIT
+
+                IF HL-DS-DATE NOT = ZEROS
+
+                   PERFORM 4200-CALC-LINE-PYMT
+                      THRU 4200-CALC-LINE-PYMT-EXIT
+
+                   PERFORM 4300-CALC-COIN-REIM
+                      THRU 4300-CALC-COIN-REIM-EXIT
+
+                   PERFORM 4400-UPDATE-CLAIM-TOTALS
+                      THRU 4400-UPDATE-CLAIM-TOTALS-EXIT
+                END-IF
+             END-IF.
+
+      *----------------------------------------------------------------*
+      *  MOVE LINE HOLD VARIABLE VALUES TO LINE OUTPUT RECORD          *
+      *----------------------------------------------------------------*
+             MOVE HL-LINE-O TO O-LINE-LEVEL-OUTPUT (LN-SUB).
+
+      *----------------------------------------------------------------*
+      *  INITIALIZE ALL LINE VARIABLES IN WORKING STORAGE HOLD AREA    *
+      *  TO PREPARE FOR THE NEXT LINE                                  *
+      *----------------------------------------------------------------*
+             INITIALIZE HOLD-LINE-LEVEL-ITEMS.
+
+       4000-PROCESS-LINE-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * FOR EACH PAID LINE, GET THE RECORD IN THE DAY SUMMARY TABLE    *
+      * THAT CORRESPONDS TO THE LINE'S DATE OF SERVICE                 *
+      *                                                                *
+      ******************************************************************
+       4100-GET-DAY-SUM-REC.
+
+      *----------------------------------------------------------------*
+      * SEARCH DAY SUMMARY TABLE STARTING AT ENTRY #1                  *
+      *----------------------------------------------------------------*
+             SET W-DS-INDX TO 1.
+             SEARCH W-DAY-SUM-ENTRY VARYING W-DS-INDX
+
+      *----------------------------------------------------------------*
+      * IF THE SERVICE LINE'S DATE IS NOT FOUND IN THE TABLE, LINE     *
+      * PAYMENT CANNOT BE CALCULATED                                   *
+      *----------------------------------------------------------------*
+                AT END
+                   GO TO 4100-GET-DAY-SUM-REC-EXIT
+
+      *----------------------------------------------------------------*
+      * IF THE SERVICE LINE'S DATE IS FOUND IN THE TABLE, MOVE THE     *
+      * DAY RECORD TO THE HOLD AREA                                    *
+      *----------------------------------------------------------------*
+                WHEN W-DS-DATE (W-DS-INDX) = HL-LINE-SRVC-DATE
+                   MOVE W-DAY-SUM-ENTRY (W-DS-INDX) TO
+                   HL-DAY-SUMMARY.
+
+       4100-GET-DAY-SUM-REC-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * FOR EACH PAID LINE, CALCULATE THE LINE PAYMENT BASED ON THE    *
+      * LINE TYPE, SET LINE RETURN CODE                                *
+      *                                                                *
+      ******************************************************************
+       4200-CALC-LINE-PYMT.
+
+      *----------------------------------------------------------------*
+      * CALCULATE PPS RATE FOR LINE WITH NO ADD-ON PAYMENT             *
+      *----------------------------------------------------------------*
+             IF PAID-ENCOUNTER OR PAID-GFTF
+                COMPUTE HL-PPS-RATE ROUNDED =
+                        HL-DS-BASE-PMT-RATE * HL-DS-GAF.
+
+
+      *----------------------------------------------------------------*
+      * CALCULATE PPS RATE FOR LINE WITH ADD-ON PAYMENT                *
+      *----------------------------------------------------------------*
+             IF PAID-WITH-ADD-ON
+                COMPUTE HL-PPS-RATE-PRE-ADD-ON ROUNDED =
+                        HL-DS-BASE-PMT-RATE * HL-DS-GAF
+                COMPUTE HL-PPS-RATE ROUNDED =
+                        HL-PPS-RATE-PRE-ADD-ON * HL-DS-ADD-ON-PMT-RATE
+                COMPUTE HL-LITEM-ADD-ON-PYMT =
+                        HL-PPS-RATE-PRE-ADD-ON - HL-PPS-RATE.
+
+
+      *----------------------------------------------------------------*
+      * MA PLAN CLAIM LINE:                                            *
+      *   LINE PAYMENT = SUPPLEMENTAL/WRAP-AROUND PAYMENT              *
+      *----------------------------------------------------------------*
+             IF MA-CLAIM AND MA-CLAIM-REV
+
+      *----------------------------------------------------------------*
+      *   SUPPLEMENTAL/WRAP AROUND PAYMENT MADE                        *
+      *----------------------------------------------------------------*
+                IF HL-PPS-RATE > I-MA-PLAN-AMT
+                   COMPUTE HL-LITEM-PYMT =
+                           HL-PPS-RATE - I-MA-PLAN-AMT
+                   MOVE 06 TO HL-LITEM-RETURN-CODE
+
+      *----------------------------------------------------------------*
+      *   NO SUPPLEMENTAL/WRAP AROUND PAYMENT MADE                     *
+      *----------------------------------------------------------------*
+                ELSE
+                   MOVE 0  TO HL-LITEM-PYMT
+                   MOVE 07 TO HL-LITEM-RETURN-CODE
+                END-IF
+                GO TO 4200-CALC-LINE-PYMT-EXIT
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * MEDICAL NON-MA PLAN CLAIM LINE:                                *
+      *   LINE PAYMENT IS LESSOR OF PPS RATE AND DAY'S MEDICAL CHARGES *
+      *----------------------------------------------------------------*
+             IF MEDICAL-LINE
+                IF HL-DS-TOT-MEDICAL-CHRGS < HL-PPS-RATE
+                   MOVE HL-DS-TOT-MEDICAL-CHRGS TO HL-LITEM-PYMT
+                ELSE
+                   MOVE HL-PPS-RATE TO HL-LITEM-PYMT
+                END-IF
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * MENTAL NON-MA PLAN CLAIM LINE:                                 *
+      *   LINE PAYMENT IS LESSOR OF PPS RATE AND DAY'S MENTAL CHARGES  *
+      *----------------------------------------------------------------*
+             IF MENTAL-LINE
+                IF HL-DS-TOT-MENTAL-CHRGS < HL-PPS-RATE
+                   MOVE HL-DS-TOT-MENTAL-CHRGS TO HL-LITEM-PYMT
+                ELSE
+                   MOVE HL-PPS-RATE TO HL-LITEM-PYMT
+                END-IF
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * MODIFIER 59 NON-MA PLAN CLAIM LINE:                            *
+      *   LINE PAYMENT IS LESSOR OF PPS RATE AND DAY'S MOD 59 CHARGES  *
+      *----------------------------------------------------------------*
+             IF MOD59-LINE
+                IF HL-DS-TOT-MOD59-CHRGS < HL-PPS-RATE
+                   MOVE HL-DS-TOT-MOD59-CHRGS TO HL-LITEM-PYMT
+                ELSE
+                   MOVE HL-PPS-RATE TO HL-LITEM-PYMT
+                END-IF
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * SET LINE RETURN CODE FOR NON-MA PLAN CLAIM LINES               *
+      *     01 - LINE PAYMENT IS THE PPS RATE                          *
+      *     05 - LINE PAYMENT IS THE PPS RATE WITH ADD-ON PAYMENT      *
+      *     02 - LINE PAYMENT IS THE DAY'S CHARGES FOR ITS VISIT TYPE  *
+      *          ZERO OUT ADD-ON PAYMENT IF CHARGES USED               *
+      *     21 - LINE PAYMENT BASED ON GRANDFATHERED TRIBAL FQHC (GFTF)*
+      *          PAYMENT                                               *
+      *     22 - LINE PAYMENT BASED ON GRANDFATHERED TRIBAL FQHC (GFTF)*
+      *          SUBMITTED CHARGES                                     *
+      *----------------------------------------------------------------*
+             IF PAID-ENCOUNTER
+                IF HL-LITEM-PYMT = HL-PPS-RATE
+                   MOVE 01 TO HL-LITEM-RETURN-CODE
+                ELSE
+                   MOVE 02 TO HL-LITEM-RETURN-CODE
+                   MOVE 0 TO HL-LITEM-ADD-ON-PYMT
+                END-IF
+             END-IF.
+
+             IF PAID-WITH-ADD-ON
+                IF HL-LITEM-PYMT = HL-PPS-RATE
+                   MOVE 05 TO HL-LITEM-RETURN-CODE
+                ELSE
+                   MOVE 02 TO HL-LITEM-RETURN-CODE
+                   MOVE 0 TO HL-LITEM-ADD-ON-PYMT
+                END-IF
+             END-IF.
+
+             IF PAID-GFTF
+                IF HL-LITEM-PYMT = HL-PPS-RATE
+                   MOVE 21 TO HL-LITEM-RETURN-CODE
+                ELSE
+                   MOVE 22 TO HL-LITEM-RETURN-CODE
+                   MOVE 0 TO HL-LITEM-ADD-ON-PYMT
+                END-IF
+             END-IF.
+
+
+       4200-CALC-LINE-PYMT-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * FOR EACH PAID LINE, DETERMINE HOW TO CALCULATE COINSURANCE     *
+      * BASED ON THE DAY STATISTICS AND LINE TYPE, CALCULATE MEDICARE  *
+      * REIMBURSEMENT, AND SET LINE RETURN CODE                        *
+      *                                                                *
+      ******************************************************************
+       4300-CALC-COIN-REIM.
+
+      *----------------------------------------------------------------*
+      * MA PLAN CLAIM LINE                                             *
+      *----------------------------------------------------------------*
+             IF MA-CLAIM AND MA-CLAIM-REV
+                MOVE 0 TO HL-LITEM-COIN
+                MOVE HL-LITEM-PYMT TO HL-LITEM-REIM
+                GO TO 4300-CALC-COIN-REIM-EXIT
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * NO PREVENTIVE SERVICES ON THE DAY (ANY NON-MA CLAIM LINE)      *
+      *----------------------------------------------------------------*
+             IF NOT PREVENTIVE-LINE-PRESENT
+                PERFORM 4320-STANDARD-COIN
+                   THRU 4320-STANDARD-COIN-EXIT
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * ONLY PREVENTIVE SERVICES ON THE DAY (ANY NON-MA CLAIM LINE)    *
+      *----------------------------------------------------------------*
+             IF PREVENTIVE-LINE-PRESENT AND
+                NOT OTHER-PKG-LINE-PRESENT
+
+                PERFORM 4330-ALL-PREVENTIVE
+                   THRU 4330-ALL-PREVENTIVE-EXIT
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * SOME PREVENTIVE SERVICES ON THE DAY (ANY NON-MA CLAIM LINE)    *
+      *----------------------------------------------------------------*
+             IF PREVENTIVE-LINE-PRESENT AND
+                OTHER-PKG-LINE-PRESENT
+
+                PERFORM 4340-SOME-PREVENTIVE
+                   THRU 4340-SOME-PREVENTIVE-EXIT
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * CALCULATE LINE MEDICARE REIMBURSEMENT                          *
+      *----------------------------------------------------------------*
+             COMPUTE HL-LITEM-REIM =
+                     HL-LITEM-PYMT - HL-LITEM-COIN.
+
+       4300-CALC-COIN-REIM-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * CALCULATE STANDARD COINSURANCE                                 *
+      * FOR LINE WITH NO ASSOCIATED PREVENTIVE SERVICE(S)              *
+      *   20% COINSURANCE                                              *
+      *                                                                *
+      ******************************************************************
+       4320-STANDARD-COIN.
+
+             COMPUTE HL-LITEM-COIN ROUNDED =
+                     HL-LITEM-PYMT * W-COIN-RATE.
+
+       4320-STANDARD-COIN-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * CALCULATE COINSURANCE FOR LINE WITH ONLY PREVENTIVE SERVICE(S) *
+      * ON THE SAME DAY                                                *
+      *   0%   COINSURANCE                                             *
+      *                                                                *
+      ******************************************************************
+       4330-ALL-PREVENTIVE.
+
+             MOVE 0 TO HL-LITEM-COIN.
+
+             IF HL-LITEM-RETURN-CODE = 01 OR 05
+                MOVE 03 TO HL-LITEM-RETURN-CODE
+             END-IF.
+
+             IF HL-LITEM-RETURN-CODE = 02
+                MOVE 04 TO HL-LITEM-RETURN-CODE
+             END-IF.
+
+       4330-ALL-PREVENTIVE-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * DETERMINE COINSURANCE CALCULATION FOR LINE WITH SOME           *
+      * PREVENTIVE PREVENTIVE SERVICE(S) AND SOME OTHER SERVICES ON    *
+      * THE SAME DAY                                                   *
+      *                                                                *
+      ******************************************************************
+       4340-SOME-PREVENTIVE.
+
+      *----------------------------------------------------------------*
+      * LINE SHOULD NOT BE ADJUSTED FOR PREVENTIVE CHARGES:            *
+      * - MENTAL LINE WITH MEDICAL PAID LINE ON SAME DAY               *
+      * - MOD 59 LINE WITH MEDICAL OR MENTAL PAID LINE ON SAME DAY     *
+      *----------------------------------------------------------------*
+             IF (MENTAL-LINE AND MEDICAL-PAID-LINE-PRESENT) OR
+                (MOD59-LINE AND (MEDICAL-PAID-LINE-PRESENT OR
+                 MENTAL-PAID-LINE-PRESENT))
+                PERFORM 4320-STANDARD-COIN
+                   THRU 4320-STANDARD-COIN-EXIT
+
+      *----------------------------------------------------------------*
+      * LINE SHOULD BE ADJUSTED FOR PREVENTIVE CHARGES:                *
+      * - MEDICAL LINE                                                 *
+      * - MENTAL LINE WITH NO PAID MEDICAL LINE ON SAME DAY            *
+      * - MOD 59 LINE WITH NO PAID MEDICAL OR MENTAL LINE ON SAME DAY  *
+      *----------------------------------------------------------------*
+             ELSE
+                PERFORM 4341-ADJ-FOR-PREVENTIVE
+                   THRU 4341-ADJ-FOR-PREVENTIVE-EXIT
+             END-IF.
+
+       4340-SOME-PREVENTIVE-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * CALCULATE COINSURANCE FOR LINE WITH PREVENTIVE SERVICE(S)      *
+      * ASSOCIATED WITH IT                                             *
+      *   0%   COINSURANCE                                             *
+      *                                                                *
+      ******************************************************************
+       4341-ADJ-FOR-PREVENTIVE.
+
+      *----------------------------------------------------------------*
+      * LINE PAYMENT EXCEEDS PREVENTIVE CHARGES:                       *
+      *   ADJUST COINSURANCE FOR PREVENTIVE CHARGES                    *
+      *----------------------------------------------------------------*
+             IF HL-LITEM-PYMT > HL-DS-TOT-PREVENTIVE-CHRGS
+
+                COMPUTE HL-BASE-COIN-AMT ROUNDED =
+                        HL-LITEM-PYMT - HL-DS-TOT-PREVENTIVE-CHRGS
+
+                COMPUTE HL-LITEM-COIN ROUNDED =
+                        HL-BASE-COIN-AMT * W-COIN-RATE
+
+      *----------------------------------------------------------------*
+      * LINE PAYMENT LESS THAN OR EQUAL TO PREVENTIVE CHARGES:         *
+      *   0% COINSURANCE                                               *
+      *----------------------------------------------------------------*
+             ELSE
+                MOVE 0 TO HL-LITEM-COIN
+             END-IF.
+
+
+      *----------------------------------------------------------------*
+      * SET LINE RETURN CODE TO INDICATE PREVENTIVE SERVICE IS PRESENT *
+      *----------------------------------------------------------------*
+             IF HL-LITEM-RETURN-CODE = 01 OR 05
+                MOVE 03 TO HL-LITEM-RETURN-CODE
+             END-IF.
+
+             IF HL-LITEM-RETURN-CODE = 02
+                MOVE 04 TO HL-LITEM-RETURN-CODE
+             END-IF.
+
+       4341-ADJ-FOR-PREVENTIVE-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      * UPDATE CLAIM PAYMENT, COINSURANCE, AND REIMBURSEMENT WITH      *
+      * LINE VALUES (ACCUMULATE)                                       *
+      *                                                                *
+      ******************************************************************
+       4400-UPDATE-CLAIM-TOTALS.
+
+             COMPUTE HC-TOT-CLM-PYMT =
+                     HC-TOT-CLM-PYMT + HL-LITEM-PYMT.
+
+             COMPUTE HC-TOT-CLM-COIN =
+                     HC-TOT-CLM-COIN + HL-LITEM-COIN.
+
+             COMPUTE HC-TOT-CLM-REIM =
+                     HC-TOT-CLM-REIM + HL-LITEM-REIM.
+
+       4400-UPDATE-CLAIM-TOTALS-EXIT.
+             EXIT.
+
+
+
+      ******************************************************************
+      *                                                                *
+      *                     END OF CLAIM PROCESSING                    *
+      *                                                                *
+      * - MOVE CLAIM LEVEL VARIABLE VALUES FROM THE HOLD AREA TO THE   *
+      *   OUTPUT RECORD.                                               *
+      * - INITIALIZE ALL CLAIM LEVEL HOLD VARIABLES                    *
+      *                                                                *
+      ******************************************************************
+       5000-END-PRICE-RTN.
+
+             MOVE HC-CLAIM-O TO O-CLAIM-LEVEL-OUTPUT.
+             INITIALIZE HOLD-CLAIM-LEVEL-ITEMS.
+
+       5000-END-PRICE-RTN-EXIT.
+             EXIT.
