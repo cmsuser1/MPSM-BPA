@@ -28,7 +28,7 @@ The legacy system only accepts files that are in a fixed-width format.
 | 1  | ID  | UNIQUE ID | 1  | 7 | 7 | This is an auto-increment integer identifier.  |
 | 2  | PRVDR_NPI  | PROVIDER NPI  | 8  | 17 | 10 | This field is the provider's NPI number  |
 | 3  | PRVDR_TIN  | PROVIDER TIN  | 18  | 27  | 10 | This field is the provider's TIN  |
-| 4  | DATE_ACT  | DATE ACTIVE  | 28  | 37  | 10 | This is the date in which the provider matching is active. The format is "YYYY-MM-DD" |
+| 4  | DATE_ACT  | DATE ACTIVE  | 28  | 37  | 10 | This is the date in which the model is active through. The format is "YYYY-MM-DD" |
 
 ## File Naming Requirements
 The legacy system will only accept files in the following format: **[model name].[mm-dd-yyyy].txt**.
