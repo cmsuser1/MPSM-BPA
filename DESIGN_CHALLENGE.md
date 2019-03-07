@@ -9,8 +9,8 @@ This work is fundamental to the agency’s mission and will require teams that c
 CMS has given you the following goals while approaching the modernization of this system:
 * Sustainability: the system, resources, and processes must maintain their current levels of service during modernization efforts
 * Agility: the system needs to evolve, sustainably, at the same speed as the business
-* Integration: systems involved in making payments, and other CMS business functions, need the option to use modern technology to interact with the current state of the shared systems.
-* Usability: users’ interaction with the shared systems need to easily identify and extract the exact data they need, when they need it.
+* Integration: systems involved in making payments, and other CMS business functions, need the option to use modern technology to interact with the current state of the legacy system.
+* Usability: users’ interaction with the legacy system need to easily identify and extract the exact data they need, when they need it.
 
 With the goals provided and as part of this design challenge, CMS wishes you to help develop of a longer-term vision and product strategy for this modernization effort. 
 
@@ -22,7 +22,7 @@ The business owners of the current system have identified modules that need “m
 
 These files don’t have the most extensive testing associated with them. CMS policy should have the expected outputs based on inputs but because they are removed from the development lifecycle, their inputs/outputs may or may not match what was actually development. You should plan for these inconsistencies by providing how you will determine parity and address each discrepancy, if any.
 
-**Business Owner 2:** In order to integrate new payment methodologies into the existing business workflow, creating services that can be reused is desired. One such example of a service is identifying participants. Each new payment methodology, called models, requires identifying participating providers or institutions. Once participants have been identified and other required information provided, that “file” needs to loaded into the legacy system. There are many models, each with their own development teams, that submit participant information to the legacy system in various different formats. The legacy system requires a standardized format. Explain how you will address the issue of lack of standard submissions and a service-based workflow.
+**Business Owner 2:** In order to integrate new payment methodologies into the existing business workflow, creating services that can be reused is desired. One such example of a service is identifying participants. Each new payment methodology, called models, requires identifying participating providers or institutions. Once participants have been identified and other required information provided, that “file” needs to loaded into the legacy system. There are many models, each with their own development teams, that submit participant information to the legacy system in various different formats. The legacy system requires a standardized format. Explain how you will address the issue of lack of standard submissions and a service-design workflow.
 
 **Deliverables**
 

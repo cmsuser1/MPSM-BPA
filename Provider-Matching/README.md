@@ -1,8 +1,8 @@
-# Shared Systems Model Provider Matching
+# Legacy System Model Provider Matching
 ## High Level Requirements
-In addition to what can be found in the [Design Challenge](https://github.com/cmsuser1/MPSM-BPA/blob/master/DESIGN_CHALLENGE.md), the business owner wishes for you to create a highly available service that accepts the following [Example Input File](https://github.com/cmsuser1/MPSM-BPA/blob/master/Attribute-Matching/provider_matching.csv) and produces files that are to be ingested into the Shared Systems.
+In addition to what can be found in the [Design Challenge](https://github.com/cmsuser1/MPSM-BPA/blob/master/DESIGN_CHALLENGE.md), the business owner wishes for you to create a highly available service that accepts the following [Example Input File](https://github.com/cmsuser1/MPSM-BPA/blob/master/Attribute-Matching/provider_matching.csv) and produces files that are to be ingested into the legacy system.
 
-The Shared Systems accepts files for each model in which providers are participating in. All models have the same requirement of only individual provider participation. Ensure that valid data will be entered into the Shared System.
+The legacy system accepts files for each model in which providers are participating in. All models have the same requirement of only individual provider participation. Ensure that valid data will be entered into the legacy system.
 
 Make sure to explain why certain decisions were made while researching, designing, and building this service.
 ## Input File
@@ -18,7 +18,7 @@ The file was produced by another vendor and thus you cannot control the data it 
 | Valid Through Date | Valid Through Date | The date in which the model is active through |
 
 ## Output Files
-The Shared System only accepts files that are in a fixed-width format. 
+The legacy system only accepts files that are in a fixed-width format. 
 
 ### File Layout
 
@@ -30,9 +30,9 @@ The Shared System only accepts files that are in a fixed-width format.
 | 4  | DATE_ACT  | DATE ACTIVE  | 28  | 37  | 10 | This is the date in which the provider matching is active. The format is "YYYY-MM-DD" |
 
 ## File Naming Requirements
-The Shared Systems will only accept files in the following format: **[model name].[mm-dd-yyyy].txt**.
+The legacy system will only accept files in the following format: **[model name].[mm-dd-yyyy].txt**.
 
-**Model Name:** The name of the model to be loaded into the Shared System. Spaces in the model's name are to be replaced with underscores.  
+**Model Name:** The name of the model to be loaded into the legacy system. Spaces in the model's name are to be replaced with underscores.  
 **MM-DD-YYYY:** The date format. January 5th, 2019 would translated to 01-05-2019.
 
 *Example*  
