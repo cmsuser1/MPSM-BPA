@@ -1,6 +1,7 @@
 # Legacy System Model Provider Matching
 ## High Level Requirements
-In addition to what can be found in the [Design Challenge](https://github.com/cmsuser1/MPSM-BPA/blob/master/DESIGN_CHALLENGE.md), the business owner wishes for you to create a highly available service that accepts the following [Example Input File](https://github.com/cmsuser1/MPSM-BPA/blob/master/Attribute-Matching/provider_matching.csv) and produces files that are to be ingested into the legacy system.
+
+In addition to what can be found in the [Design Challenge](https://github.com/cmsuser1/MPSM-BPA/blob/master/DESIGN_CHALLENGE.md), the business owner wishes for you to create a highly available service that accepts the following [Example Input File](https://github.com/cmsuser1/MPSM-BPA/blob/master/Provider-Matching/provider_matching.csv) and produces files that are to be ingested into the legacy system.
 
 The legacy system accepts files for each model in which providers are participating in. All models have the same requirement of only individual provider participation. Ensure that valid data will be entered into the legacy system.
 
